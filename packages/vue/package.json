@@ -1,0 +1,52 @@
+{
+  "name": "@simple-post/preview-vue",
+  "version": "0.1.0",
+  "description": "Vue adapter for @simple-post/preview.",
+  "keywords": [
+    "vue",
+    "social-media",
+    "post-preview"
+  ],
+  "license": "MIT",
+  "author": "Simple Post",
+  "homepage": "https://github.com/simple-post/preview#vue",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simple-post/preview.git",
+    "directory": "packages/vue"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --external vue --external @simple-post/preview --clean",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@simple-post/preview": "0.1.0"
+  },
+  "peerDependencies": {
+    "vue": ">=3.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,47 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require the tagged commit to be on main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install an npm version with trusted publishing support
+        run: npm install --global npm@latest
+
+      - run: npm ci
+      - run: npm run version:tag -- "$GITHUB_REF_NAME"
+      - run: npm run check
+
+      - name: Publish framework-agnostic package
+        run: npm publish --workspace @simple-post/preview
+
+      - name: Publish React adapter
+        run: npm publish --workspace @simple-post/preview-react
+
+      - name: Publish Vue adapter
+        run: npm publish --workspace @simple-post/preview-vue

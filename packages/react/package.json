@@ -1,0 +1,53 @@
+{
+  "name": "@simple-post/preview-react",
+  "version": "0.1.0",
+  "description": "React adapter for @simple-post/preview.",
+  "keywords": [
+    "react",
+    "social-media",
+    "post-preview"
+  ],
+  "license": "MIT",
+  "author": "Simple Post",
+  "homepage": "https://github.com/simple-post/preview#react",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simple-post/preview.git",
+    "directory": "packages/react"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm,cjs --dts --external react --external @simple-post/preview --clean",
+    "clean": "rm -rf dist",
+    "dev": "tsup src/index.tsx --format esm,cjs --dts --external react --external @simple-post/preview --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@simple-post/preview": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
