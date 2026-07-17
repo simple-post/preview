@@ -16,6 +16,10 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # npm trusted publishing works for private repositories, but Sigstore
+    # provenance currently requires the source repository to be public.
+    env:
+      NPM_CONFIG_PROVENANCE: "false"
     steps:
       - uses: actions/checkout@v4
         with:
