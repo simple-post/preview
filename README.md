@@ -79,15 +79,35 @@ The core package also exposes `renderPostPreview(target, data)` and `renderPostP
 
 ## Local development
 
+This repository uses Yarn 4 (the pinned release in `.yarn/releases` runs automatically).
+
 ```bash
-npm install
-npm test
-npm run build
+yarn install
+yarn test
+yarn build
+yarn check   # build + typecheck + test + pack dry-run, same as CI
 ```
 
-When this repository is checked out next to the Simple Post `core` repository, `yarn dev` in the scheduler builds and watches these packages, then mirrors their tiny build output into the installed local packages. Changes reach Turbopack in milliseconds without publishing or packing. Production builds use the pinned npm dependency instead.
+### Developing against the Simple Post scheduler
 
-To force the scheduler to test its installed npm package locally, run `yarn dev:published` in `core/scheduler`.
+When this repository is checked out next to the Simple Post `core` repository, link the packages into the scheduler with [Yarn portals](https://yarnpkg.com/cli/link):
+
+```bash
+# in core/scheduler — adds portal: resolutions to core/package.json
+yarn preview:link
+
+# in this repository — rebuild dist/ on every change
+yarn dev
+```
+
+Then run `yarn dev` in `core/scheduler` as usual; Next.js picks up rebuilt output through the portal symlinks. When you are done, remove the portals so the scheduler uses the published npm packages again:
+
+```bash
+# in core/scheduler
+yarn preview:unlink
+```
+
+Do not commit the `portal:` resolutions that `preview:link` adds to `core/package.json` — they only resolve on machines that have this repository checked out as a sibling. Note that `preview:unlink` re-resolves the pinned versions from npm, so it requires the versions referenced by `core` to actually be published.
 
 ## Releasing
 

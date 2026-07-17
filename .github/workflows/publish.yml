@@ -28,14 +28,16 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          cache: npm
+          cache: yarn
 
+      # Yarn drives install/build/test; npm publishes because trusted
+      # publishing (OIDC + provenance) is an npm CLI feature.
       - name: Install an npm version with trusted publishing support
         run: npm install --global npm@latest
 
-      - run: npm ci
-      - run: npm run version:tag -- "$GITHUB_REF_NAME"
-      - run: npm run check
+      - run: yarn install --immutable
+      - run: yarn version:tag "$GITHUB_REF_NAME"
+      - run: yarn check
 
       - name: Publish framework-agnostic package
         run: npm publish --workspace @simple-post/preview

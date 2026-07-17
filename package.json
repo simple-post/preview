@@ -12,18 +12,20 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @simple-post/preview && npm run build --workspace @simple-post/preview-react && npm run build --workspace @simple-post/preview-vue",
-    "check": "npm run build && npm run typecheck && npm run test && npm run pack:check",
-    "clean": "npm run clean --workspaces --if-present",
-    "pack:check": "npm pack --dry-run --workspace @simple-post/preview && npm pack --dry-run --workspace @simple-post/preview-react && npm pack --dry-run --workspace @simple-post/preview-vue",
+    "build": "yarn workspaces foreach -A -pt run build",
+    "check": "yarn build && yarn typecheck && yarn test && yarn pack:check",
+    "clean": "yarn workspaces foreach -A run clean",
+    "dev": "yarn workspaces foreach -A -pi -j unlimited run dev",
+    "pack:check": "yarn workspaces foreach -A --no-private pack --dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck": "yarn workspaces foreach -A run typecheck",
     "version:tag": "node scripts/version-from-tag.mjs"
   },
   "engines": {
     "node": ">=20"
   },
+  "packageManager": "yarn@4.9.2",
   "devDependencies": {
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",

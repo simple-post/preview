@@ -23,15 +23,4 @@ for (const file of files) {
   await writeFile(file, `${JSON.stringify(json, null, 2)}\n`);
 }
 
-const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
-lock.version = version;
-lock.packages[""].version = version;
-for (const path of ["packages/preview", "packages/react", "packages/vue"]) {
-  lock.packages[path].version = version;
-  if (lock.packages[path].dependencies?.["@simple-post/preview"]) {
-    lock.packages[path].dependencies["@simple-post/preview"] = version;
-  }
-}
-await writeFile("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
-
 console.log(`Prepared packages for ${version}`);
