@@ -14,6 +14,8 @@ export const PREVIEW_PLATFORMS = [
 
 export type PreviewPlatform = (typeof PREVIEW_PLATFORMS)[number];
 export type PreviewPlatformInput = PreviewPlatform | "twitter";
+export const PREVIEW_THEMES = ["dark", "light"] as const;
+export type PreviewTheme = (typeof PREVIEW_THEMES)[number];
 
 export interface PreviewAccount {
   id?: string;
@@ -39,6 +41,7 @@ export interface PreviewThreadItem {
 
 export interface PostPreviewData {
   platform?: PreviewPlatformInput | (string & {});
+  theme?: PreviewTheme;
   account: PreviewAccount;
   message?: string;
   media?: PreviewMedia[];

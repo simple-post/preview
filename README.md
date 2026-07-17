@@ -24,6 +24,7 @@ import "@simple-post/preview/element";
 const preview = document.querySelector("simple-post-preview");
 preview.data = {
   platform: "x",
+  theme: "light",
   account: {
     platform: "x",
     displayName: "Ada Lovelace",
@@ -41,7 +42,11 @@ preview.data = {
 <simple-post-preview></simple-post-preview>
 ```
 
-For simple text previews, `platform` and `message` are also available as HTML attributes.
+For simple text previews, `platform`, `message`, and `theme` are also available as HTML attributes:
+
+```html
+<simple-post-preview platform="x" theme="light" message="Hello!"></simple-post-preview>
+```
 
 ## React
 
@@ -53,7 +58,7 @@ npm install @simple-post/preview-react
 import { PostPreview } from "@simple-post/preview-react";
 
 export function Example() {
-  return <PostPreview data={{ platform: "bluesky", account: { platform: "bluesky", username: "ada" }, message: "Hello!" }} />;
+  return <PostPreview theme="light" data={{ platform: "bluesky", account: { platform: "bluesky", username: "ada" }, message: "Hello!" }} />;
 }
 ```
 
@@ -69,9 +74,13 @@ import { PostPreview } from "@simple-post/preview-vue";
 </script>
 
 <template>
-  <PostPreview :data="{ platform: 'threads', account: { platform: 'threads', username: 'ada' }, message: 'Hello!' }" />
+  <PostPreview theme="light" :data="{ platform: 'threads', account: { platform: 'threads', username: 'ada' }, message: 'Hello!' }" />
 </template>
 ```
+
+## Themes
+
+Every renderer supports `dark` and `light`. Dark is the default, preserving the behavior of earlier releases. Set `theme` on `PostPreviewData`, use the framework adapter's `theme` prop, or use the Web Component attribute. Each platform has its own light palette rather than a generic color inversion.
 
 ## Direct DOM rendering
 

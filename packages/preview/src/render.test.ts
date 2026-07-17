@@ -25,8 +25,28 @@ describe("renderPostPreviewHtml", () => {
     expect(html).toContain("&lt;script&gt;");
   });
 
+  it.each(PREVIEW_PLATFORMS)("renders %s in light mode", (platform) => {
+    const html = renderPostPreviewHtml({
+      ...base,
+      platform,
+      theme: "light",
+      account: { ...base.account, platform },
+    });
+    expect(html).toContain("sp-theme-light");
+    expect(html).toContain(`sp-${platform === "x" ? "x" : platform}`);
+  });
+
   it("normalizes the twitter alias", () => {
     expect(renderPostPreviewHtml({ ...base, platform: "twitter" })).toContain("sp-x");
+  });
+
+  it.each(["dark", "light"] as const)("renders the %s theme", (theme) => {
+    const html = renderPostPreviewHtml({ ...base, theme });
+    expect(html).toContain(`sp-theme-${theme}`);
+  });
+
+  it("defaults to the dark theme", () => {
+    expect(renderPostPreviewHtml(base)).toContain("sp-theme-dark");
   });
 
   it("rejects unsafe media URLs", () => {
@@ -46,5 +66,16 @@ describe("SimplePostPreviewElement", () => {
     element.data = { ...base, platform: "youtube", account: { ...base.account, platform: "youtube" } };
     expect(element.shadowRoot?.textContent).toContain("Edmund Clompton");
     expect(element.shadowRoot?.querySelector(".sp-youtube")).not.toBeNull();
+  });
+
+  it("supports the theme attribute and returns to dark when it is removed", () => {
+    defineSimplePostPreview();
+    const element = document.createElement("simple-post-preview");
+    element.setAttribute("theme", "light");
+    document.body.append(element);
+    expect(element.shadowRoot?.querySelector(".sp-theme-light")).not.toBeNull();
+
+    element.removeAttribute("theme");
+    expect(element.shadowRoot?.querySelector(".sp-theme-dark")).not.toBeNull();
   });
 });

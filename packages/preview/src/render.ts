@@ -1,6 +1,6 @@
 import { imageIcon, musicIcon, playIcon } from "./icons";
 import { previewStyles } from "./styles";
-import type { PostPreviewData, PreviewAccount, PreviewMedia, PreviewPlatform, PreviewThreadItem } from "./types";
+import type { PostPreviewData, PreviewAccount, PreviewMedia, PreviewPlatform, PreviewTheme, PreviewThreadItem } from "./types";
 import { escapeHtml as h, normalizePreviewPlatform, normalizePreviewTitle, safeUrl } from "./utils";
 
 export const POST_PREVIEW_RUNTIME_EVENT = "simple-post-preview:runtime-update";
@@ -12,6 +12,7 @@ interface PostPreviewRuntime {
 
 interface NormalizedPreviewData {
   platform?: PreviewPlatform;
+  theme: PreviewTheme;
   account: PreviewAccount;
   message: string;
   media: PreviewMedia[];
@@ -24,6 +25,7 @@ function normalizeData(data: PostPreviewData): NormalizedPreviewData {
   const date = new Date(data.previewDate ?? Date.now());
   return {
     platform: normalizePreviewPlatform(data.platform || data.account.platform),
+    theme: data.theme === "light" ? "light" : "dark",
     account: data.account,
     message: data.message || "",
     media: Array.isArray(data.media) ? data.media : [],
@@ -182,8 +184,10 @@ const renderers: Record<PreviewPlatform, (data: NormalizedPreviewData) => string
 
 export function renderPostPreviewHtml(data: PostPreviewData): string {
   const normalized = normalizeData(data);
-  if (!normalized.platform) return `<div class="sp-root sp-unsupported">Unsupported platform</div>`;
-  return renderers[normalized.platform](normalized);
+  const html = normalized.platform
+    ? renderers[normalized.platform](normalized)
+    : `<div class="sp-root sp-unsupported">Unsupported platform</div>`;
+  return html.replace("class=\"sp-root", `class="sp-root sp-theme-${normalized.theme}`);
 }
 
 export function renderPostPreview(target: HTMLElement | ShadowRoot, data: PostPreviewData): void {
