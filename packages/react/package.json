@@ -45,7 +45,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "provenance": false
+    "provenance": true
   },
   "engines": {
     "node": ">=20"

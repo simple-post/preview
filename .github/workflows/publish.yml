@@ -16,10 +16,6 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # npm trusted publishing works for private repositories, but Sigstore
-    # provenance currently requires the source repository to be public.
-    env:
-      NPM_CONFIG_PROVENANCE: "false"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +31,7 @@ jobs:
           cache: yarn
 
       # Yarn drives install/build/test; npm publishes because trusted
-      # publishing through OIDC is an npm CLI feature.
+      # publishing (OIDC + provenance) is an npm CLI feature.
       - name: Install an npm version with trusted publishing support
         run: npm install --global npm@latest
 
