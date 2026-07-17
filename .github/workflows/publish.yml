@@ -35,7 +35,7 @@ jobs:
           cache: yarn
 
       # Yarn drives install/build/test; npm publishes because trusted
-      # publishing (OIDC + provenance) is an npm CLI feature.
+      # publishing through OIDC is an npm CLI feature.
       - name: Install an npm version with trusted publishing support
         run: npm install --global npm@latest
 
