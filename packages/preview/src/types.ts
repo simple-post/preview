@@ -47,6 +47,10 @@ export interface PostPreviewData {
   media?: PreviewMedia[];
   options?: Record<string, unknown>;
   thread?: PreviewThreadItem[];
+  /** Scroll within maxHeight (default), or expand to fit the complete post/thread. */
+  threadLayout?: "scroll" | "expand";
+  /** Maximum preview height in CSS pixels in scroll mode. Defaults to 720. */
+  maxHeight?: number;
   previewDate?: Date | string | number;
 }
 

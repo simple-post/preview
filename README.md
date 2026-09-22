@@ -136,3 +136,49 @@ The tag is the source of truth for the published version; no release commit is g
 ## License
 
 MIT
+
+## Carousels, long threads, and video quality
+
+Provide every attachment in `media`. Instagram, TikTok, Telegram, X, Threads,
+Bluesky, Facebook, LinkedIn, and Pinterest render multi-item media as horizontally
+scrollable galleries, including galleries inside replies. Swipe, use the scrollbar,
+click Previous/Next, or focus the gallery and press Left/Right, Home, or End.
+Single attachments retain their existing layout. YouTube and Forem retain their
+single video/cover layout.
+
+Threads on X, Threads, Bluesky, and Telegram include **every** reply. By default,
+the complete preview scrolls vertically within 720px. Configure the same data in
+vanilla JavaScript, React, or Vue:
+
+```ts
+const data = {
+  account: { platform: "x", username: "alex" },
+  message: "The beginning of a long thread",
+  thread: Array.from({ length: 12 }, (_, i) => ({ message: `Reply ${i + 1}` })),
+  threadLayout: "scroll" as const, // "expand" grows to fit all content
+  maxHeight: 520,                 // positive CSS pixels; scroll mode only
+};
+```
+
+`--simple-post-preview-max-height` overrides `maxHeight` in scroll mode. For
+expanded previews, ensure the containing application also allows the element to
+grow rather than imposing a fixed height with hidden overflow.
+
+Images use their original URL instead of a potentially small thumbnail. Video
+previews decode a frame near the start of the original video without autoplay or
+canvas downsampling. `thumbnailUrl` remains the loading/error fallback. This
+requires the browser to load video data; source resolution, browser codec support,
+and media availability still determine the result.
+
+`renderPostPreview` and all adapters initialize galleries and video frames
+automatically. With `renderPostPreviewHtml`, include `previewStyles` and call
+`initializePostPreview(container)` after inserting the HTML to enable buttons and
+original video frames. Without JavaScript, galleries still scroll natively.
+
+### Interactive examples
+
+Run `yarn examples` and open <http://127.0.0.1:5173/examples/>. The demo uses local
+media and includes platform/theme switches, six-image galleries, twelve-reply
+threads with a scroll/expand toggle, and a 1280×720 video with an intentionally
+small poster to compare quality. The generated video test pattern is included at
+`examples/quality.webm`; no external media services are required.

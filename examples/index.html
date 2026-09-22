@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview library · media and threads</title>
+<style>
+body{margin:0;background:#edf0f3;color:#17212b;font:16px/1.5 system-ui,sans-serif}main{max-width:1280px;margin:auto;padding:32px}h1{font-size:32px;margin-bottom:8px}h2{font-size:18px}p{max-width:800px}label{display:inline-block;margin:8px 20px 8px 0}select,input{font:inherit}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start}article{min-width:0}simple-post-preview{border-radius:12px;overflow:hidden;box-shadow:0 4px 20px #17212b18}small{display:block;margin:12px 0;color:#52616b}
+</style>
+<main>
+<h1>Media & long threads</h1>
+<p>Swipe images, scroll horizontally, use the arrow buttons, or focus a gallery and use ← / → / Home / End. Each gallery contains six images. Threads contain twelve replies, including a final message.</p>
+<label>Platform <select id="platform"><option>instagram</option><option>tiktok</option><option>telegram</option><option>x</option><option>threads</option><option>bluesky</option><option>facebook</option><option>linkedin</option><option>pinterest</option></select></label>
+<label>Theme <select id="theme"><option>light</option><option>dark</option></select></label>
+<section>
+<article><h2>1. Six-image carousel</h2><simple-post-preview id="gallery"></simple-post-preview></article>
+<article><h2>2. Complete thread</h2><label><input id="expand" type="checkbox"> Expand to fit all replies</label><label>Platform <select id="threadPlatform"><option>x</option><option>threads</option><option>bluesky</option><option>telegram</option></select></label><simple-post-preview id="thread"></simple-post-preview></article>
+<article><h2>3. Original video frame</h2><p>The same local video with a deliberately tiny poster. The preview decodes the original frame; the poster below shows the difference.</p><simple-post-preview id="video"></simple-post-preview><small>Low-resolution poster for comparison:</small><img id="poster" width="300" alt="Deliberately low resolution video poster"></article>
+</section>
+</main>
+<script type="module">
+import { defineSimplePostPreview } from '../packages/preview/src/index.ts';
+defineSimplePostPreview();
+const $ = id => document.getElementById(id);
+const colors = ['#155e75','#9f1239','#4338ca','#166534','#9a3412','#334155'];
+const images = colors.map((color,i) => ({type:'image',url:`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><rect width="1200" height="1200" fill="${color}"/><circle cx="900" cy="250" r="350" fill="white" opacity=".12"/><text x="90" y="590" font-family="Arial" font-size="260" fill="white">0${i+1}</text><text x="100" y="740" font-family="Arial" font-size="50" fill="white">Carousel · original image</text></svg>`)}`,alt:`Slide ${i+1}`}));
+const account = platform => ({platform,displayName:'Alex Morgan',username:'alex'});
+function update() {
+  const platform=$('platform').value, theme=$('theme').value, threadPlatform=$('threadPlatform').value;
+  $('gallery').data={account:account(platform),theme,message:'Six images. Every one is reachable.',media:images};
+  $('thread').data={account:account(threadPlatform),theme,message:'A thread with twelve replies. Scroll down to find the final message.',threadLayout:$('expand').checked?'expand':'scroll',maxHeight:520,thread:Array.from({length:12},(_,i)=>({message:i===11?'12. Final message — you reached the end.':`${i+1}. A complete reply with enough text to demonstrate vertical scrolling. Nothing is removed from the thread.`,...(i===5?{media:images}: {})}))};
+  $('video').data={account:account('youtube'),theme,message:'Fine details from the original video',media:[{type:'video',url:'./quality.webm',thumbnailUrl:poster}]};
+}
+const poster='./poster.png';$('poster').src=poster;
+for(const id of ['platform','theme','threadPlatform','expand']) $(id).addEventListener('change',update);
+update();
+</script>
+</html>
