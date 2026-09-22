@@ -136,3 +136,64 @@ The tag is the source of truth for the published version; no release commit is g
 ## License
 
 MIT
+
+## Carousels, long threads, and video quality
+
+Provide every attachment in `media`. Rendering follows the platform's feed:
+
+- Instagram: overlaid, vertically centered arrows and pagination dots.
+- X: arrow-free swipeable cards with dots above; `xMediaLayout: "grid"` selects
+  the classic grid for clients without the carousel rollout.
+- Threads: rounded cards with the next image peeking into view.
+- TikTok: portrait photo mode with swipe navigation and overlaid dots.
+- Bluesky and Telegram: feed grids / tiled chat albums.
+- Facebook and LinkedIn: multi-photo collages with overflow counts.
+- Pinterest: carousel Pin presentation with dots and overlaid controls.
+
+Swipe, drag with a mouse, use supported arrow controls, or focus a strip and use
+Left/Right, Home, or End. Click collage tiles to open an inline album viewer;
+Back to album or Escape restores the feed and focus. All attachments remain
+reachable without zoom. Single attachments retain their existing layout.
+YouTube and Forem retain their single video/cover layout.
+
+Optional `PreviewMedia.width` and `height` provide source dimensions for initial
+layout. The first loaded image refines carousel framing and collage orientation.
+See [research notes](examples/media-research.md) for source links, client variants,
+and deliberate approximations.
+
+Threads on X, Threads, Bluesky, and Telegram include **every** reply. By default,
+the complete preview scrolls vertically within 720px. Configure the same data in
+vanilla JavaScript, React, or Vue:
+
+```ts
+const data = {
+  account: { platform: "x", username: "alex" },
+  message: "The beginning of a long thread",
+  thread: Array.from({ length: 12 }, (_, i) => ({ message: `Reply ${i + 1}` })),
+  threadLayout: "scroll" as const, // "expand" grows to fit all content
+  maxHeight: 520,                 // positive CSS pixels; scroll mode only
+};
+```
+
+`--simple-post-preview-max-height` overrides `maxHeight` in scroll mode. For
+expanded previews, ensure the containing application also allows the element to
+grow rather than imposing a fixed height with hidden overflow.
+
+Images use their original URL instead of a potentially small thumbnail. Video
+previews decode a frame near the start of the original video without autoplay or
+canvas downsampling. `thumbnailUrl` remains the loading/error fallback. This
+requires the browser to load video data; source resolution, browser codec support,
+and media availability still determine the result.
+
+`renderPostPreview` and all adapters initialize galleries and video frames
+automatically. With `renderPostPreviewHtml`, include `previewStyles` and call
+`initializePostPreview(container)` after inserting the HTML to enable buttons and
+original video frames. Without JavaScript, galleries still scroll natively.
+
+### Interactive examples
+
+Run `yarn examples` and open <http://127.0.0.1:5173/examples/>. The demo uses local
+media and includes platform/theme switches, side-by-side platform layouts, image-count and aspect-ratio controls, twelve-reply
+threads with a scroll/expand toggle, and a 1280×720 video with an intentionally
+small poster to compare quality. The generated video test pattern is included at
+`examples/quality.webm`; no external media services are required.

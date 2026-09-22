@@ -1,4 +1,4 @@
-export { renderPostPreview, renderPostPreviewHtml } from "./render";
+export { renderPostPreview, renderPostPreviewHtml, initializePostPreview } from "./render";
 export { previewStyles } from "./styles";
 export { defineSimplePostPreview, SimplePostPreviewElement } from "./web-component";
 export { getUniquePreviewPlatforms, normalizePreviewPlatform, normalizePreviewTitle } from "./utils";

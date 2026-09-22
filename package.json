@@ -20,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "yarn workspaces foreach -A run typecheck",
-    "version:tag": "node scripts/version-from-tag.mjs"
+    "version:tag": "node scripts/version-from-tag.mjs",
+    "examples": "vite --host 127.0.0.1 --open /examples/"
   },
   "engines": {
     "node": ">=20"
