@@ -30,6 +30,9 @@ export interface PreviewMedia {
   type: "image" | "video";
   url: string;
   thumbnailUrl?: string | null;
+  /** Optional source dimensions, used for media layout before images load. */
+  width?: number;
+  height?: number;
   filename?: string;
   alt?: string;
 }
@@ -42,6 +45,8 @@ export interface PreviewThreadItem {
 export interface PostPreviewData {
   platform?: PreviewPlatformInput | (string & {});
   theme?: PreviewTheme;
+  /** X is rolling out swipeable media; select grid for its classic feed layout. */
+  xMediaLayout?: "carousel" | "grid";
   account: PreviewAccount;
   message?: string;
   media?: PreviewMedia[];

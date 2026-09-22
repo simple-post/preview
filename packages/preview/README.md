@@ -12,8 +12,10 @@ See the [repository documentation](https://github.com/simple-post/preview#readme
 
 ### Media galleries and long threads
 
-Multi-item `media` arrays render scrollable galleries, with Previous/Next buttons
-and keyboard navigation. Threads include all replies. Set `data.threadLayout` to
+Multi-item `media` arrays use platform-specific carousels, strips, grids, or
+albums. Instagram has centered overlay arrows; X has an arrow-free strip
+(`xMediaLayout: "grid"` selects its classic layout). Collage tiles open an inline
+album viewer. Swiping, mouse dragging and keyboard navigation remain available. Threads include all replies. Set `data.threadLayout` to
 `"scroll"` (default, 720px maximum) or `"expand"` to fit the complete thread, and
 use `data.maxHeight` to customize the scroll height in pixels. These data options
 also work through the React and Vue adapters.

@@ -139,12 +139,27 @@ MIT
 
 ## Carousels, long threads, and video quality
 
-Provide every attachment in `media`. Instagram, TikTok, Telegram, X, Threads,
-Bluesky, Facebook, LinkedIn, and Pinterest render multi-item media as horizontally
-scrollable galleries, including galleries inside replies. Swipe, use the scrollbar,
-click Previous/Next, or focus the gallery and press Left/Right, Home, or End.
-Single attachments retain their existing layout. YouTube and Forem retain their
-single video/cover layout.
+Provide every attachment in `media`. Rendering follows the platform's feed:
+
+- Instagram: overlaid, vertically centered arrows and pagination dots.
+- X: arrow-free swipeable cards with dots above; `xMediaLayout: "grid"` selects
+  the classic grid for clients without the carousel rollout.
+- Threads: rounded cards with the next image peeking into view.
+- TikTok: portrait photo mode with swipe navigation and overlaid dots.
+- Bluesky and Telegram: feed grids / tiled chat albums.
+- Facebook and LinkedIn: multi-photo collages with overflow counts.
+- Pinterest: carousel Pin presentation with dots and overlaid controls.
+
+Swipe, drag with a mouse, use supported arrow controls, or focus a strip and use
+Left/Right, Home, or End. Click collage tiles to open an inline album viewer;
+Back to album or Escape restores the feed and focus. All attachments remain
+reachable without zoom. Single attachments retain their existing layout.
+YouTube and Forem retain their single video/cover layout.
+
+Optional `PreviewMedia.width` and `height` provide source dimensions for initial
+layout. The first loaded image refines carousel framing and collage orientation.
+See [research notes](examples/media-research.md) for source links, client variants,
+and deliberate approximations.
 
 Threads on X, Threads, Bluesky, and Telegram include **every** reply. By default,
 the complete preview scrolls vertically within 720px. Configure the same data in
@@ -178,7 +193,7 @@ original video frames. Without JavaScript, galleries still scroll natively.
 ### Interactive examples
 
 Run `yarn examples` and open <http://127.0.0.1:5173/examples/>. The demo uses local
-media and includes platform/theme switches, six-image galleries, twelve-reply
+media and includes platform/theme switches, side-by-side platform layouts, image-count and aspect-ratio controls, twelve-reply
 threads with a scroll/expand toggle, and a 1280×720 video with an intentionally
 small poster to compare quality. The generated video test pattern is included at
 `examples/quality.webm`; no external media services are required.

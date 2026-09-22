@@ -1,4 +1,5 @@
-import { imageIcon, musicIcon, playIcon } from "./icons";
+import { musicIcon } from "./icons";
+import { emptyMedia, mediaAsset, platformMedia, initializeMedia } from "./media";
 import { previewStyles } from "./styles";
 import type { PostPreviewData, PreviewAccount, PreviewMedia, PreviewPlatform, PreviewTheme, PreviewThreadItem } from "./types";
 import { escapeHtml as h, normalizePreviewPlatform, normalizePreviewTitle, safeUrl } from "./utils";
@@ -13,6 +14,7 @@ interface PostPreviewRuntime {
 interface NormalizedPreviewData {
   platform?: PreviewPlatform;
   theme: PreviewTheme;
+  xMediaLayout: "carousel" | "grid";
   account: PreviewAccount;
   message: string;
   media: PreviewMedia[];
@@ -26,6 +28,7 @@ function normalizeData(data: PostPreviewData): NormalizedPreviewData {
   return {
     platform: normalizePreviewPlatform(data.platform || data.account.platform),
     theme: data.theme === "light" ? "light" : "dark",
+    xMediaLayout: data.xMediaLayout === "grid" ? "grid" : "carousel",
     account: data.account,
     message: data.message || "",
     media: Array.isArray(data.media) ? data.media : [],
@@ -59,28 +62,6 @@ function firstLine(value: string, fallback: string): string {
   return value.split("\n").map((line) => line.trim()).find(Boolean) || fallback;
 }
 
-function mediaAsset(file: PreviewMedia, natural = false, showPlay = true): string {
-  const source = safeUrl(file.url);
-  const thumbnail = safeUrl(file.thumbnailUrl);
-  const label = file.alt || file.filename || "Post media";
-  if (!source && !thumbnail) return emptyMedia("Media unavailable");
-  const className = `sp-media${natural ? " sp-media--natural" : ""}`;
-  if (file.type === "image") {
-    return `<div class="${className}"><img src="${h(source || thumbnail)}" alt="${h(label)}" /></div>`;
-  }
-  return `<div class="${className}"><video${source ? ` src="${h(source)}"` : ""}${thumbnail ? ` poster="${h(thumbnail)}"` : ""} aria-label="${h(label)}" muted playsinline preload="metadata"></video>${showPlay ? `<span class="sp-play"><span>${playIcon}</span></span>` : ""}</div>`;
-}
-
-function mediaGallery(media: PreviewMedia[], className = "", natural = true, showPlay = true): string {
-  if (!media.length) return "";
-  if (media.length === 1) return `<div class="${className}" style="overflow:hidden">${mediaAsset(media[0], natural, showPlay)}</div>`;
-  return `<section class="sp-gallery ${className}" aria-label="Post media" aria-roledescription="carousel"><div class="sp-gallery-track" tabindex="0" aria-label="Scroll through ${media.length} media items">${media.map((file, index) => `<div class="sp-gallery-slide" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${media.length}">${mediaAsset(file, false, showPlay)}<span class="sp-counter">${index + 1}/${media.length}</span></div>`).join("")}</div><div class="sp-gallery-controls" hidden><button type="button" data-direction="-1" aria-label="Previous media">‹</button><span class="sp-gallery-status" aria-live="polite">1 / ${media.length}</span><button type="button" data-direction="1" aria-label="Next media">›</button></div></section>`;
-}
-
-function emptyMedia(label: string): string {
-  return `<div class="sp-empty">${imageIcon}<span>${h(label)}</span></div>`;
-}
-
 function formatXTimestamp(date: Date): string {
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date);
   const day = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(date);
@@ -95,26 +76,26 @@ function formatCompactTimestamp(date: Date): string {
 
 function xPreview(data: NormalizedPreviewData): string {
   const { account, message, media, previewDate } = data;
-  const mediaHtml = mediaGallery(media, "sp-x-media");
-  const thread = data.thread.map((item) => `<div class="sp-x-thread"><div class="sp-row">${avatar(account)}<div class="sp-grow"><p class="sp-inline-meta sp-truncate"><b>${h(accountName(account))}</b><span class="sp-muted">${h(accountHandle(account))} · 1m</span></p><p class="sp-copy sp-x-thread-copy">${h(item.message)}</p>${mediaGallery(item.media || [], "sp-x-media")}</div></div></div>`).join("");
+  const mediaHtml = platformMedia(media, "x", "sp-x-media", data.xMediaLayout);
+  const thread = data.thread.map((item) => `<div class="sp-x-thread"><div class="sp-row">${avatar(account)}<div class="sp-grow"><p class="sp-inline-meta sp-truncate"><b>${h(accountName(account))}</b><span class="sp-muted">${h(accountHandle(account))} · 1m</span></p><p class="sp-copy sp-x-thread-copy">${h(item.message)}</p>${platformMedia(item.media || [], "x", "sp-x-media", data.xMediaLayout)}</div></div></div>`).join("");
   return `<div class="sp-root sp-x"><div class="sp-x-main"><div class="sp-row sp-x-head">${avatar(account, "sp-avatar--48")}<div class="sp-grow"><p class="sp-x-name sp-truncate">${h(accountName(account))}</p><p class="sp-x-handle sp-truncate">${h(accountHandle(account))}</p></div></div><p class="sp-copy sp-x-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${mediaHtml}<p class="sp-x-time">${h(formatXTimestamp(previewDate))}</p></div>${thread}</div>`;
 }
 
 function instagramPreview(data: NormalizedPreviewData): string {
   const { account, message, media } = data;
   const first = media[0];
-  return `<div class="sp-root sp-instagram"><div class="sp-row sp-instagram-head">${avatar(account, "sp-avatar--32")}<div class="sp-truncate">${h(accountHandle(account).slice(1))}</div></div><div class="sp-media--natural">${first ? mediaGallery(media) : `<div class="sp-instagram-blank">${emptyMedia("Add a photo or video")}</div>`}</div><p class="sp-copy sp-instagram-copy"><b>${h(accountHandle(account).slice(1))}</b>${message ? h(message) : `<span class="sp-muted">Your caption will appear here.</span>`}</p></div>`;
+  return `<div class="sp-root sp-instagram"><div class="sp-row sp-instagram-head">${avatar(account, "sp-avatar--32")}<div class="sp-truncate">${h(accountHandle(account).slice(1))}</div></div><div class="sp-media--natural">${first ? platformMedia(media, "instagram") : `<div class="sp-instagram-blank">${emptyMedia("Add a photo or video")}</div>`}</div><p class="sp-copy sp-instagram-copy"><b>${h(accountHandle(account).slice(1))}</b>${message ? h(message) : `<span class="sp-muted">Your caption will appear here.</span>`}</p></div>`;
 }
 
 function facebookPreview(data: NormalizedPreviewData): string {
   const { account, message, media } = data;
-  return `<div class="sp-root sp-facebook"><div class="sp-row sp-facebook-head">${avatar(account)}<div class="sp-grow"><p class="sp-facebook-name sp-truncate">${h(accountName(account))}</p><p class="sp-facebook-meta">Just now · Public</p></div></div><p class="sp-copy sp-facebook-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${mediaGallery(media)}</div>`;
+  return `<div class="sp-root sp-facebook"><div class="sp-row sp-facebook-head">${avatar(account)}<div class="sp-grow"><p class="sp-facebook-name sp-truncate">${h(accountName(account))}</p><p class="sp-facebook-meta">Just now · Public</p></div></div><p class="sp-copy sp-facebook-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${platformMedia(media, "facebook")}</div>`;
 }
 
 function tiktokPreview(data: NormalizedPreviewData): string {
   const { account, media, options } = data;
   const caption = optionString(options, "title") || data.message || "Your caption will appear here.";
-  return `<div class="sp-root sp-tiktok">${media[0] ? mediaGallery(media, "sp-tiktok-media", false, false) : `<div class="sp-tiktok-fallback"></div>`}<div class="sp-tiktok-shade"></div><div class="sp-avatar sp-tiktok-avatar">${safeUrl(account.profilePicture) ? `<img src="${h(safeUrl(account.profilePicture))}" alt="" />` : h(accountName(account)[0] || "S")}</div><div class="sp-tiktok-copy"><p class="sp-handle">${h(accountHandle(account))}</p><p class="sp-copy sp-caption">${h(caption)}</p><p class="sp-sound">${musicIcon} original sound - ${h(accountHandle(account).slice(1))}</p></div></div>`;
+  return `<div class="sp-root sp-tiktok">${media[0] ? platformMedia(media, "tiktok", "sp-tiktok-media") : `<div class="sp-tiktok-fallback"></div>`}<div class="sp-tiktok-shade"></div><div class="sp-avatar sp-tiktok-avatar">${safeUrl(account.profilePicture) ? `<img src="${h(safeUrl(account.profilePicture))}" alt="" />` : h(accountName(account)[0] || "S")}</div><div class="sp-tiktok-copy"><p class="sp-handle">${h(accountHandle(account))}</p><p class="sp-copy sp-caption">${h(caption)}</p><p class="sp-sound">${musicIcon} original sound - ${h(accountHandle(account).slice(1))}</p></div></div>`;
 }
 
 function youtubePreview(data: NormalizedPreviewData): string {
@@ -126,28 +107,28 @@ function youtubePreview(data: NormalizedPreviewData): string {
 
 function telegramPreview(data: NormalizedPreviewData): string {
   const items = [{ message: data.message, media: data.media }, ...data.thread.map((item) => ({ message: item.message, media: item.media || [] }))];
-  return `<div class="sp-root sp-telegram">${items.map((item) => `<div class="sp-bubble">${item.media.length ? mediaGallery(item.media, "sp-bubble-media") : ""}<div class="sp-bubble-copy"><p class="sp-copy">${item.message ? h(item.message) : `<span class="sp-muted">Your message will appear here.</span>`}</p><p class="sp-bubble-time">9:41</p></div></div>`).join("")}</div>`;
+  return `<div class="sp-root sp-telegram">${items.map((item) => `<div class="sp-bubble">${item.media.length ? platformMedia(item.media, "telegram", "sp-bubble-media") : ""}<div class="sp-bubble-copy"><p class="sp-copy">${item.message ? h(item.message) : `<span class="sp-muted">Your message will appear here.</span>`}</p><p class="sp-bubble-time">9:41</p></div></div>`).join("")}</div>`;
 }
 
 function blueskyPreview(data: NormalizedPreviewData): string {
   const items = [{ message: data.message, media: data.media }, ...data.thread.map((item) => ({ message: item.message, media: item.media || [] }))];
-  return `<div class="sp-root sp-bluesky">${items.map((item) => `<div class="sp-bluesky-post"><div class="sp-row sp-bluesky-head">${avatar(data.account)}<div class="sp-grow"><p class="sp-bluesky-name sp-truncate">${h(accountName(data.account))}</p><p class="sp-bluesky-handle sp-truncate">${h(accountHandle(data.account))}</p></div></div><p class="sp-copy sp-bluesky-copy">${item.message ? h(item.message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${mediaGallery(item.media, "sp-bluesky-media")}<p class="sp-bluesky-time">${h(formatCompactTimestamp(data.previewDate))}</p></div>`).join("")}</div>`;
+  return `<div class="sp-root sp-bluesky">${items.map((item) => `<div class="sp-bluesky-post"><div class="sp-row sp-bluesky-head">${avatar(data.account)}<div class="sp-grow"><p class="sp-bluesky-name sp-truncate">${h(accountName(data.account))}</p><p class="sp-bluesky-handle sp-truncate">${h(accountHandle(data.account))}</p></div></div><p class="sp-copy sp-bluesky-copy">${item.message ? h(item.message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${platformMedia(item.media, "bluesky", "sp-bluesky-media")}<p class="sp-bluesky-time">${h(formatCompactTimestamp(data.previewDate))}</p></div>`).join("")}</div>`;
 }
 
 function threadsPreview(data: NormalizedPreviewData): string {
   const items = [{ message: data.message, media: data.media }, ...data.thread.map((item) => ({ message: item.message, media: item.media || [] }))];
-  return `<div class="sp-root sp-threads">${items.map((item, index) => `<div class="sp-thread-item"><div class="sp-row sp-thread-row"><div class="sp-thread-avatar">${avatar(data.account)}${index < items.length - 1 ? `<span class="sp-thread-line"></span>` : ""}</div><div class="sp-grow"><p class="sp-thread-meta"><b>${h(accountHandle(data.account).slice(1))}</b><span class="sp-thread-age">1m</span></p><p class="sp-copy sp-thread-copy">${item.message ? h(item.message) : `<span class="sp-muted">Start a thread…</span>`}</p>${mediaGallery(item.media, "sp-thread-media")}</div></div></div>`).join("")}</div>`;
+  return `<div class="sp-root sp-threads">${items.map((item, index) => `<div class="sp-thread-item"><div class="sp-row sp-thread-row"><div class="sp-thread-avatar">${avatar(data.account)}${index < items.length - 1 ? `<span class="sp-thread-line"></span>` : ""}</div><div class="sp-grow"><p class="sp-thread-meta"><b>${h(accountHandle(data.account).slice(1))}</b><span class="sp-thread-age">1m</span></p><p class="sp-copy sp-thread-copy">${item.message ? h(item.message) : `<span class="sp-muted">Start a thread…</span>`}</p>${platformMedia(item.media, "threads", "sp-thread-media")}</div></div></div>`).join("")}</div>`;
 }
 
 function linkedinPreview(data: NormalizedPreviewData): string {
   const { account, message, media } = data;
-  return `<div class="sp-root sp-linkedin"><div class="sp-row sp-linkedin-head">${avatar(account)}<div class="sp-grow"><p class="sp-linkedin-name sp-truncate">${h(accountName(account))} <span class="sp-muted" style="font-weight:400">• 3rd+</span></p><p class="sp-linkedin-meta">1m •</p></div><span class="sp-follow">Follow</span></div><p class="sp-copy sp-linkedin-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${mediaGallery(media)}</div>`;
+  return `<div class="sp-root sp-linkedin"><div class="sp-row sp-linkedin-head">${avatar(account)}<div class="sp-grow"><p class="sp-linkedin-name sp-truncate">${h(accountName(account))} <span class="sp-muted" style="font-weight:400">• 3rd+</span></p><p class="sp-linkedin-meta">1m •</p></div><span class="sp-follow">Follow</span></div><p class="sp-copy sp-linkedin-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${platformMedia(media, "linkedin")}</div>`;
 }
 
 function pinterestPreview(data: NormalizedPreviewData): string {
   const title = optionString(data.options, "title") || firstLine(data.message, "Your Pin");
   const description = optionString(data.options, "description") || data.message || "Your description will appear here.";
-  return `<div class="sp-root sp-pinterest"><div class="sp-pin-media">${data.media[0] ? mediaGallery(data.media) : `<div class="sp-pin-empty">${emptyMedia("Add media for your Pin")}</div>`}</div><div class="sp-pin-info"><h2 class="sp-pin-title">${h(title)}</h2><p class="sp-pin-description">${h(description)}</p><div class="sp-row sp-pin-account">${avatar(data.account, "sp-avatar--32")}<p class="sp-truncate">${h(accountName(data.account))}</p></div></div></div>`;
+  return `<div class="sp-root sp-pinterest"><div class="sp-pin-media">${data.media[0] ? platformMedia(data.media, "pinterest") : `<div class="sp-pin-empty">${emptyMedia("Add media for your Pin")}</div>`}</div><div class="sp-pin-info"><h2 class="sp-pin-title">${h(title)}</h2><p class="sp-pin-description">${h(description)}</p><div class="sp-row sp-pin-account">${avatar(data.account, "sp-avatar--32")}<p class="sp-truncate">${h(accountName(data.account))}</p></div></div></div>`;
 }
 
 function foremPreview(data: NormalizedPreviewData): string {
@@ -188,35 +169,7 @@ export function renderPostPreview(target: HTMLElement | ShadowRoot, data: PostPr
 
 /** Enhance server-rendered HTML, or call renderPostPreview for automatic setup. */
 export function initializePostPreview(target: HTMLElement | ShadowRoot): void {
-  target.querySelectorAll<HTMLElement>(".sp-gallery").forEach((gallery) => {
-    if (gallery.dataset.initialized) return;
-    gallery.dataset.initialized = "true";
-    const track = gallery.querySelector<HTMLElement>(".sp-gallery-track")!;
-    const controls = gallery.querySelector<HTMLElement>(".sp-gallery-controls")!;
-    const buttons = controls.querySelectorAll<HTMLButtonElement>("button");
-    const status = controls.querySelector<HTMLElement>(".sp-gallery-status")!;
-    const last = track.children.length - 1;
-    const index = () => Math.max(0, Math.min(last, Math.round(track.scrollLeft / (track.clientWidth || 1))));
-    const update = () => {
-      const current = index();
-      buttons[0].disabled = current === 0;
-      buttons[1].disabled = current === last;
-      status.textContent = `${current + 1} / ${last + 1}`;
-    };
-    const navigate = (next: number) => {
-      track.scrollTo({ left: Math.max(0, Math.min(last, next)) * track.clientWidth, behavior: "instant" });
-      update();
-    };
-    buttons.forEach((button) => button.addEventListener("click", () => navigate(index() + Number(button.dataset.direction))));
-    track.addEventListener("scroll", update, { passive: true });
-    track.addEventListener("keydown", (event) => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      event.preventDefault();
-      navigate(event.key === "Home" ? 0 : event.key === "End" ? last : index() + (event.key === "ArrowRight" ? 1 : -1));
-    });
-    controls.hidden = false;
-    update();
-  });
+  initializeMedia(target);
   target.querySelectorAll<HTMLVideoElement>("video").forEach((video) => {
     if (video.dataset.initialized || !video.getAttribute("src")) return;
     video.dataset.initialized = "true";

@@ -115,10 +115,12 @@ describe("complete media and threads", () => {
 describe("interactive previews", () => {
   it("navigates, updates boundaries, and initializes only once", () => {
     const container = document.createElement("div");
-    renderPostPreview(container, { ...base, media: [base.media![0], base.media![0], base.media![0]] });
+    renderPostPreview(container, { ...base, platform: "instagram", media: [base.media![0], base.media![0], base.media![0]] });
     initializePostPreview(container);
     const track = container.querySelector<HTMLElement>(".sp-gallery-track")!;
     Object.defineProperty(track, "clientWidth", { value: 300 });
+    Object.defineProperty(track, "scrollWidth", { value: 900 });
+    Array.from(track.children).forEach((slide, i) => Object.defineProperty(slide, "offsetLeft", { value: i * 300 }));
     track.scrollTo = vi.fn((options?: ScrollToOptions | number) => { track.scrollLeft = typeof options === "number" ? options : options?.left ?? 0; track.dispatchEvent(new Event("scroll")); });
     const [previous, next] = container.querySelectorAll<HTMLButtonElement>("button");
     expect(previous.disabled).toBe(true);
@@ -162,7 +164,7 @@ describe("media fallback and mixed galleries", () => {
   it("keeps mixed galleries independent inside thread replies", () => {
     const container = document.createElement("div");
     const media = [base.media![0], { type: "video" as const, url: "https://example.com/video.mp4" }];
-    renderPostPreview(container, { ...base, media, thread: [{ message: "Reply", media }] });
+    renderPostPreview(container, { ...base, platform: "threads", media, thread: [{ message: "Reply", media }] });
     expect(container.querySelectorAll(".sp-gallery")).toHaveLength(2);
     expect(container.querySelectorAll(".sp-gallery-slide video")).toHaveLength(2);
     expect(container.querySelectorAll(".sp-gallery-controls:not([hidden])")).toHaveLength(2);
