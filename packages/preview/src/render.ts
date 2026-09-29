@@ -102,7 +102,7 @@ function youtubePreview(data: NormalizedPreviewData): string {
   const { account, media, options } = data;
   const title = optionString(options, "title") || firstLine(data.message, "Your video title");
   const description = optionString(options, "description") || data.message;
-  return `<div class="sp-root sp-youtube">${media[0] ? mediaAsset(media[0], true) : `<div class="sp-youtube-empty">${emptyMedia("Add a video")}</div>`}<div class="sp-youtube-info"><h2 class="sp-youtube-title">${h(title)}</h2><p class="sp-youtube-meta">Just now</p><div class="sp-row sp-youtube-channel">${avatar(account, "sp-avatar--36")}<div class="sp-grow"><p class="sp-truncate" style="font-size:12px;font-weight:600">${h(accountName(account))}</p><p class="sp-youtube-meta">${h(accountHandle(account))}</p></div></div>${description && description !== title ? `<p class="sp-copy sp-youtube-description">${h(description)}</p>` : ""}</div></div>`;
+  return `<div class="sp-root sp-youtube">${media[0] ? mediaAsset(media[0], true) : `<div class="sp-youtube-empty">${emptyMedia("Add a video")}</div>`}<div class="sp-youtube-info"><p class="sp-youtube-title">${h(title)}</p><p class="sp-youtube-meta">Just now</p><div class="sp-row sp-youtube-channel">${avatar(account, "sp-avatar--36")}<div class="sp-grow"><p class="sp-truncate" style="font-size:12px;font-weight:600">${h(accountName(account))}</p><p class="sp-youtube-meta">${h(accountHandle(account))}</p></div></div>${description && description !== title ? `<p class="sp-copy sp-youtube-description">${h(description)}</p>` : ""}</div></div>`;
 }
 
 function telegramPreview(data: NormalizedPreviewData): string {
@@ -128,13 +128,13 @@ function linkedinPreview(data: NormalizedPreviewData): string {
 function pinterestPreview(data: NormalizedPreviewData): string {
   const title = optionString(data.options, "title") || firstLine(data.message, "Your Pin");
   const description = optionString(data.options, "description") || data.message || "Your description will appear here.";
-  return `<div class="sp-root sp-pinterest"><div class="sp-pin-media">${data.media[0] ? platformMedia(data.media, "pinterest") : `<div class="sp-pin-empty">${emptyMedia("Add media for your Pin")}</div>`}</div><div class="sp-pin-info"><h2 class="sp-pin-title">${h(title)}</h2><p class="sp-pin-description">${h(description)}</p><div class="sp-row sp-pin-account">${avatar(data.account, "sp-avatar--32")}<p class="sp-truncate">${h(accountName(data.account))}</p></div></div></div>`;
+  return `<div class="sp-root sp-pinterest"><div class="sp-pin-media">${data.media[0] ? platformMedia(data.media, "pinterest") : `<div class="sp-pin-empty">${emptyMedia("Add media for your Pin")}</div>`}</div><div class="sp-pin-info"><p class="sp-pin-title">${h(title)}</p><p class="sp-pin-description">${h(description)}</p><div class="sp-row sp-pin-account">${avatar(data.account, "sp-avatar--32")}<p class="sp-truncate">${h(accountName(data.account))}</p></div></div></div>`;
 }
 
 function foremPreview(data: NormalizedPreviewData): string {
   const title = normalizePreviewTitle(optionString(data.options, "title") || data.message, "Your article title");
   const tags = Array.isArray(data.options.tags) ? data.options.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 4) : [];
-  return `<div class="sp-root sp-forem">${data.media[0] ? `<div class="sp-forem-cover">${mediaAsset(data.media[0])}</div>` : ""}<div class="sp-forem-info"><div class="sp-row sp-forem-head">${avatar(data.account, "sp-avatar--32")}<div><p>${h(accountName(data.account))}</p><p class="sp-forem-meta">Posted just now</p></div></div><h2 class="sp-forem-title">${h(title)}</h2>${tags.length ? `<div class="sp-tags">${tags.map((tag) => `<span>#${h(tag)}</span>`).join("")}</div>` : ""}<p class="sp-forem-copy">${h(data.message || "Your article body will appear here.")}</p></div></div>`;
+  return `<div class="sp-root sp-forem">${data.media[0] ? `<div class="sp-forem-cover">${mediaAsset(data.media[0])}</div>` : ""}<div class="sp-forem-info"><div class="sp-row sp-forem-head">${avatar(data.account, "sp-avatar--32")}<div><p>${h(accountName(data.account))}</p><p class="sp-forem-meta">Posted just now</p></div></div><p class="sp-forem-title">${h(title)}</p>${tags.length ? `<div class="sp-tags">${tags.map((tag) => `<span>#${h(tag)}</span>`).join("")}</div>` : ""}<p class="sp-forem-copy">${h(data.message || "Your article body will appear here.")}</p></div></div>`;
 }
 
 const renderers: Record<PreviewPlatform, (data: NormalizedPreviewData) => string> = {
