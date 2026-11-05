@@ -1,3 +1,4 @@
+import { previewI18n, type PreviewI18n } from "./i18n";
 import { imageIcon, playIcon } from "./icons";
 import type { PreviewMedia, PreviewPlatform } from "./types";
 import { escapeHtml as h, safeUrl } from "./utils";
@@ -6,11 +7,11 @@ export function emptyMedia(label: string): string {
   return `<div class="sp-empty">${imageIcon}<span>${h(label)}</span></div>`;
 }
 
-export function mediaAsset(file: PreviewMedia, natural = false, showPlay = true): string {
+export function mediaAsset(file: PreviewMedia, natural = false, showPlay = true, i18n: PreviewI18n = previewI18n()): string {
   const source = safeUrl(file.url);
   const thumbnail = safeUrl(file.thumbnailUrl);
-  const label = file.alt || file.filename || "Post media";
-  if (!source && !thumbnail) return emptyMedia("Media unavailable");
+  const label = file.alt || file.filename || i18n.t("postMedia");
+  if (!source && !thumbnail) return emptyMedia(i18n.t("mediaUnavailable"));
   const className = `sp-media${natural ? " sp-media--natural" : ""}`;
   if (file.type === "image") return `<div class="${className}"><img src="${h(source || thumbnail)}" alt="${h(label)}" draggable="false" /></div>`;
   return `<div class="${className}"><video${source ? ` src="${h(source)}"` : ""}${thumbnail ? ` poster="${h(thumbnail)}"` : ""} aria-label="${h(label)}" muted playsinline preload="metadata"></video>${showPlay ? `<span class="sp-play"><span>${playIcon}</span></span>` : ""}</div>`;
@@ -23,20 +24,20 @@ function ratio(file: PreviewMedia): number {
 type GalleryStyle = "instagram" | "tiktok" | "x" | "threads" | "pinterest" | "viewer";
 const chevron = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-function carousel(media: PreviewMedia[], style: GalleryStyle, className = ""): string {
+function carousel(media: PreviewMedia[], style: GalleryStyle, className = "", i18n: PreviewI18n = previewI18n()): string {
   const arrows = style !== "x" && style !== "tiktok";
   const dots = style !== "threads" && style !== "viewer";
   const counter = style === "instagram" || style === "tiktok" || style === "viewer";
   const aspect = Math.max(style === "pinterest" ? 2 / 3 : 4 / 5, Math.min(1.91, ratio(media[0])));
-  return `<section class="sp-gallery sp-gallery--${style} ${className}" style="--sp-media-ratio:${aspect}" aria-label="Post media" aria-roledescription="carousel"><div class="sp-gallery-stage"><div class="sp-gallery-track" tabindex="0" aria-label="Scroll through ${media.length} media items">${media.map((file, index) => `<div class="sp-gallery-slide" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${media.length}">${mediaAsset(file, false, style !== "tiktok")}</div>`).join("")}</div>${counter ? `<span class="sp-counter" aria-hidden="true">1/${media.length}</span>` : ""}${arrows ? `<div class="sp-gallery-controls" hidden><button class="sp-gallery-prev" type="button" data-direction="-1" aria-label="Previous media">${chevron}</button><button class="sp-gallery-next" type="button" data-direction="1" aria-label="Next media">${chevron}</button></div>` : ""}</div>${dots ? `<div class="sp-gallery-dots" aria-hidden="true">${media.map((_, i) => `<span class="sp-gallery-dot${i === 0 ? " sp-active" : ""}"></span>`).join("")}</div>` : ""}<span class="sp-sr-only sp-gallery-status" aria-live="polite">1 / ${media.length}</span></section>`;
+  return `<section data-locale="${i18n.locale}" dir="ltr" class="sp-gallery sp-gallery--${style} ${className}" style="--sp-media-ratio:${aspect}" aria-label="${h(i18n.t("postMedia"))}" aria-roledescription="${h(i18n.t("carousel"))}"><div class="sp-gallery-stage"><div class="sp-gallery-track" tabindex="0" aria-label="${h(i18n.t("scrollMedia", { count: media.length }))}">${media.map((file, index) => `<div class="sp-gallery-slide" role="group" aria-roledescription="${h(i18n.t("slide"))}" aria-label="${h(i18n.t("mediaPosition", { index: index + 1, count: media.length }))}">${mediaAsset(file, false, style !== "tiktok", i18n)}</div>`).join("")}</div>${counter ? `<span class="sp-counter" aria-hidden="true">${i18n.number(1)}/${i18n.number(media.length)}</span>` : ""}${arrows ? `<div class="sp-gallery-controls" hidden><button class="sp-gallery-prev" type="button" data-direction="-1" aria-label="${h(i18n.t("previousMedia"))}">${chevron}</button><button class="sp-gallery-next" type="button" data-direction="1" aria-label="${h(i18n.t("nextMedia"))}">${chevron}</button></div>` : ""}</div>${dots ? `<div class="sp-gallery-dots" aria-hidden="true">${media.map((_, i) => `<span class="sp-gallery-dot${i === 0 ? " sp-active" : ""}"></span>`).join("")}</div>` : ""}<span class="sp-sr-only sp-gallery-status" aria-live="polite">${h(i18n.t("mediaPosition", { index: 1, count: media.length }))}</span></section>`;
 }
 
-function mosaic(media: PreviewMedia[], platform: PreviewPlatform, className: string): string {
+function mosaic(media: PreviewMedia[], platform: PreviewPlatform, className: string, i18n: PreviewI18n): string {
   const limit = platform === "telegram" ? media.length : platform === "facebook" || platform === "linkedin" ? 5 : 4;
   const shown = media.slice(0, limit);
   const count = shown.length;
   const landscape = ratio(media[0]) > 4 / 3;
-  const tiles = shown.map((file, i) => `<button type="button" class="sp-mosaic-tile" data-open-index="${i}" aria-label="View media ${i + 1} of ${media.length}${i === count - 1 && media.length > count ? `, ${media.length - count} more` : ""}">${mediaAsset(file)}${i === count - 1 && media.length > count ? `<span class="sp-more">+${media.length - count}</span>` : ""}</button>`);
+  const tiles = shown.map((file, i) => `<button type="button" class="sp-mosaic-tile" data-open-index="${i}" aria-label="${h(i18n.t(i === count - 1 && media.length > count ? "viewMediaMore" : "viewMedia", { index: i + 1, count: media.length, more: media.length - count }))}">${mediaAsset(file, false, true, i18n)}${i === count - 1 && media.length > count ? `<span class="sp-more">+${i18n.number(media.length - count)}</span>` : ""}</button>`);
   let grid: string;
   if (platform === "telegram" && count > 4) {
     // Justified rows preserve the album's order and show every item in the chat bubble.
@@ -53,14 +54,14 @@ function mosaic(media: PreviewMedia[], platform: PreviewPlatform, className: str
     grid = `<div style="--sp-first-ratio:${ratio(media[0])}" class="sp-mosaic sp-mosaic--${count} sp-mosaic--${platform} ${landscape ? "sp-mosaic--landscape" : "sp-mosaic--portrait"}">${tiles.join("")}</div>`;
   }
   // The feed remains a native-looking collage. A tile opens an inline, non-zooming viewer.
-  return `<section class="sp-media-group ${className}" aria-label="Photo album">${grid}<div class="sp-album-viewer" hidden><button class="sp-album-back" type="button">Back to album</button>${carousel(media, "viewer")}</div></section>`;
+  return `<section class="sp-media-group ${className}" aria-label="${h(i18n.t("photoAlbum"))}">${grid}<div class="sp-album-viewer" hidden><button class="sp-album-back" type="button">${h(i18n.t("backToAlbum"))}</button>${carousel(media, "viewer", "", i18n)}</div></section>`;
 }
 
-export function platformMedia(media: PreviewMedia[], platform: PreviewPlatform, className = "", xLayout: "carousel" | "grid" = "carousel"): string {
+export function platformMedia(media: PreviewMedia[], platform: PreviewPlatform, className = "", xLayout: "carousel" | "grid" = "carousel", i18n: PreviewI18n = previewI18n()): string {
   if (!media.length) return "";
-  if (media.length === 1) return `<div class="${className}" style="overflow:hidden">${mediaAsset(media[0], platform !== "tiktok", platform !== "tiktok")}</div>`;
-  if (["telegram", "bluesky", "facebook", "linkedin"].includes(platform) || platform === "x" && xLayout === "grid") return mosaic(media, platform, className);
-  return carousel(media, platform as GalleryStyle, className);
+  if (media.length === 1) return `<div class="${className}" style="overflow:hidden">${mediaAsset(media[0], platform !== "tiktok", platform !== "tiktok", i18n)}</div>`;
+  if (["telegram", "bluesky", "facebook", "linkedin"].includes(platform) || platform === "x" && xLayout === "grid") return mosaic(media, platform, className, i18n);
+  return carousel(media, platform as GalleryStyle, className, i18n);
 }
 
 export function initializeMedia(target: HTMLElement | ShadowRoot): void {
@@ -68,6 +69,7 @@ export function initializeMedia(target: HTMLElement | ShadowRoot): void {
   target.querySelectorAll<HTMLElement>(".sp-gallery").forEach(gallery => {
     if (gallery.dataset.initialized) return;
     gallery.dataset.initialized = "true";
+    const i18n = previewI18n(gallery.dataset.locale);
     const track = gallery.querySelector<HTMLElement>(".sp-gallery-track")!;
     const slides = Array.from(track.children) as HTMLElement[];
     const buttons = gallery.querySelectorAll<HTMLButtonElement>("[data-direction]");
@@ -89,8 +91,8 @@ export function initializeMedia(target: HTMLElement | ShadowRoot): void {
         dot.classList.toggle("sp-active", i === current);
         dot.hidden = dots.length > 7 && Math.abs(i - current) > 3;
       });
-      status.textContent = `${current + 1} / ${last + 1}`;
-      if (counter) counter.textContent = `${current + 1}/${last + 1}`;
+      status.textContent = i18n.t("mediaPosition", { index: current + 1, count: last + 1 });
+      if (counter) counter.textContent = `${i18n.number(current + 1)}/${i18n.number(last + 1)}`;
     };
     const navigate = (next: number) => {
       track.scrollTo({ left: position(Math.max(0, Math.min(last, next))), behavior: "instant" });

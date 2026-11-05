@@ -1,3 +1,4 @@
+import { previewI18n, type PreviewI18n } from "./i18n";
 import { musicIcon } from "./icons";
 import { emptyMedia, mediaAsset, platformMedia, initializeMedia } from "./media";
 import { previewStyles } from "./styles";
@@ -12,6 +13,7 @@ interface PostPreviewRuntime {
 }
 
 interface NormalizedPreviewData {
+  i18n: PreviewI18n;
   platform?: PreviewPlatform;
   theme: PreviewTheme;
   xMediaLayout: "carousel" | "grid";
@@ -26,6 +28,7 @@ interface NormalizedPreviewData {
 function normalizeData(data: PostPreviewData): NormalizedPreviewData {
   const date = new Date(data.previewDate ?? Date.now());
   return {
+    i18n: previewI18n(data.locale),
     platform: normalizePreviewPlatform(data.platform || data.account.platform),
     theme: data.theme === "light" ? "light" : "dark",
     xMediaLayout: data.xMediaLayout === "grid" ? "grid" : "carousel",
@@ -38,8 +41,8 @@ function normalizeData(data: PostPreviewData): NormalizedPreviewData {
   };
 }
 
-function accountName(account: PreviewAccount): string {
-  return account.displayName || account.username || "Your account";
+function accountName(account: PreviewAccount, i18n: PreviewI18n): string {
+  return account.displayName || account.username || i18n.t("account");
 }
 
 function accountHandle(account: PreviewAccount): string {
@@ -47,9 +50,9 @@ function accountHandle(account: PreviewAccount): string {
   return `@${value.replace(/^@/, "").replaceAll(/\s+/g, "").toLowerCase()}`;
 }
 
-function avatar(account: PreviewAccount, modifier = ""): string {
+function avatar(account: PreviewAccount, modifier = "", i18n: PreviewI18n): string {
   const image = safeUrl(account.profilePicture);
-  const fallback = accountName(account).match(/[\p{L}\p{N}]/u)?.[0]?.toUpperCase() || "S";
+  const fallback = accountName(account, i18n).match(/[\p{L}\p{N}]/u)?.[0]?.toUpperCase() || "S";
   return `<span class="sp-avatar ${modifier}">${image ? `<img src="${h(image)}" alt="" />` : h(fallback)}</span>`;
 }
 
@@ -62,79 +65,79 @@ function firstLine(value: string, fallback: string): string {
   return value.split("\n").map((line) => line.trim()).find(Boolean) || fallback;
 }
 
-function formatXTimestamp(date: Date): string {
-  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date);
-  const day = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(date);
+function formatXTimestamp(date: Date, locale: string): string {
+  const time = new Intl.DateTimeFormat(locale === "en" ? "en-US" : locale, { hour: "numeric", minute: "2-digit" }).format(date);
+  const day = new Intl.DateTimeFormat(locale === "en" ? "en-US" : locale, { day: "numeric", month: "short", year: "numeric" }).format(date);
   return `${time} · ${day}`;
 }
 
-function formatCompactTimestamp(date: Date): string {
-  const time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(date);
-  const day = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(date);
+function formatCompactTimestamp(date: Date, locale: string): string {
+  const time = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : locale, { hour: "2-digit", minute: "2-digit" }).format(date);
+  const day = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : locale, { day: "numeric", month: "short", year: "numeric" }).format(date);
   return `${time} · ${day}`;
 }
 
 function xPreview(data: NormalizedPreviewData): string {
   const { account, message, media, previewDate } = data;
-  const mediaHtml = platformMedia(media, "x", "sp-x-media", data.xMediaLayout);
-  const thread = data.thread.map((item) => `<div class="sp-x-thread"><div class="sp-row">${avatar(account)}<div class="sp-grow"><p class="sp-inline-meta sp-truncate"><b>${h(accountName(account))}</b><span class="sp-muted">${h(accountHandle(account))} · 1m</span></p><p class="sp-copy sp-x-thread-copy">${h(item.message)}</p>${platformMedia(item.media || [], "x", "sp-x-media", data.xMediaLayout)}</div></div></div>`).join("");
-  return `<div class="sp-root sp-x"><div class="sp-x-main"><div class="sp-row sp-x-head">${avatar(account, "sp-avatar--48")}<div class="sp-grow"><p class="sp-x-name sp-truncate">${h(accountName(account))}</p><p class="sp-x-handle sp-truncate">${h(accountHandle(account))}</p></div></div><p class="sp-copy sp-x-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${mediaHtml}<p class="sp-x-time">${h(formatXTimestamp(previewDate))}</p></div>${thread}</div>`;
+  const mediaHtml = platformMedia(media, "x", "sp-x-media", data.xMediaLayout, data.i18n);
+  const thread = data.thread.map((item) => `<div class="sp-x-thread"><div class="sp-row">${avatar(account, "", data.i18n)}<div class="sp-grow"><p class="sp-inline-meta sp-truncate"><b>${h(accountName(account, data.i18n))}</b><span class="sp-muted">${h(accountHandle(account))} · ${h(data.i18n.minuteAgo)}</span></p><p dir="auto" class="sp-copy sp-x-thread-copy">${h(item.message)}</p>${platformMedia(item.media || [], "x", "sp-x-media", data.xMediaLayout, data.i18n)}</div></div></div>`).join("");
+  return `<div class="sp-root sp-x"><div class="sp-x-main"><div class="sp-row sp-x-head">${avatar(account, "sp-avatar--48", data.i18n)}<div class="sp-grow"><p class="sp-x-name sp-truncate">${h(accountName(account, data.i18n))}</p><p class="sp-x-handle sp-truncate">${h(accountHandle(account))}</p></div></div><p dir="auto" class="sp-copy sp-x-copy">${message ? h(message) : `<span class="sp-muted">${h(data.i18n.t("postPlaceholder"))}</span>`}</p>${mediaHtml}<p class="sp-x-time">${h(formatXTimestamp(previewDate, data.i18n.locale))}</p></div>${thread}</div>`;
 }
 
 function instagramPreview(data: NormalizedPreviewData): string {
   const { account, message, media } = data;
   const first = media[0];
-  return `<div class="sp-root sp-instagram"><div class="sp-row sp-instagram-head">${avatar(account, "sp-avatar--32")}<div class="sp-truncate">${h(accountHandle(account).slice(1))}</div></div><div class="sp-media--natural">${first ? platformMedia(media, "instagram") : `<div class="sp-instagram-blank">${emptyMedia("Add a photo or video")}</div>`}</div><p class="sp-copy sp-instagram-copy"><b>${h(accountHandle(account).slice(1))}</b>${message ? h(message) : `<span class="sp-muted">Your caption will appear here.</span>`}</p></div>`;
+  return `<div class="sp-root sp-instagram"><div class="sp-row sp-instagram-head">${avatar(account, "sp-avatar--32", data.i18n)}<div class="sp-truncate">${h(accountHandle(account).slice(1))}</div></div><div class="sp-media--natural">${first ? platformMedia(media, "instagram", "", "carousel", data.i18n) : `<div class="sp-instagram-blank">${emptyMedia(data.i18n.t("addPhotoVideo"))}</div>`}</div><p dir="auto" class="sp-copy sp-instagram-copy"><b>${h(accountHandle(account).slice(1))}</b>${message ? h(message) : `<span class="sp-muted">${h(data.i18n.t("captionPlaceholder"))}</span>`}</p></div>`;
 }
 
 function facebookPreview(data: NormalizedPreviewData): string {
   const { account, message, media } = data;
-  return `<div class="sp-root sp-facebook"><div class="sp-row sp-facebook-head">${avatar(account)}<div class="sp-grow"><p class="sp-facebook-name sp-truncate">${h(accountName(account))}</p><p class="sp-facebook-meta">Just now · Public</p></div></div><p class="sp-copy sp-facebook-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${platformMedia(media, "facebook")}</div>`;
+  return `<div class="sp-root sp-facebook"><div class="sp-row sp-facebook-head">${avatar(account, "", data.i18n)}<div class="sp-grow"><p class="sp-facebook-name sp-truncate">${h(accountName(account, data.i18n))}</p><p class="sp-facebook-meta">${h(data.i18n.t("justNowPublic"))}</p></div></div><p dir="auto" class="sp-copy sp-facebook-copy">${message ? h(message) : `<span class="sp-muted">${h(data.i18n.t("postPlaceholder"))}</span>`}</p>${platformMedia(media, "facebook", "", "carousel", data.i18n)}</div>`;
 }
 
 function tiktokPreview(data: NormalizedPreviewData): string {
   const { account, media, options } = data;
-  const caption = optionString(options, "title") || data.message || "Your caption will appear here.";
-  return `<div class="sp-root sp-tiktok">${media[0] ? platformMedia(media, "tiktok", "sp-tiktok-media") : `<div class="sp-tiktok-fallback"></div>`}<div class="sp-tiktok-shade"></div><div class="sp-avatar sp-tiktok-avatar">${safeUrl(account.profilePicture) ? `<img src="${h(safeUrl(account.profilePicture))}" alt="" />` : h(accountName(account)[0] || "S")}</div><div class="sp-tiktok-copy"><p class="sp-handle">${h(accountHandle(account))}</p><p class="sp-copy sp-caption">${h(caption)}</p><p class="sp-sound">${musicIcon} original sound - ${h(accountHandle(account).slice(1))}</p></div></div>`;
+  const caption = optionString(options, "title") || data.message || data.i18n.t("captionPlaceholder");
+  return `<div class="sp-root sp-tiktok">${media[0] ? platformMedia(media, "tiktok", "sp-tiktok-media", "carousel", data.i18n) : `<div class="sp-tiktok-fallback"></div>`}<div class="sp-tiktok-shade"></div><div class="sp-avatar sp-tiktok-avatar">${safeUrl(account.profilePicture) ? `<img src="${h(safeUrl(account.profilePicture))}" alt="" />` : h(accountName(account, data.i18n)[0] || "S")}</div><div class="sp-tiktok-copy"><p class="sp-handle">${h(accountHandle(account))}</p><p dir="auto" class="sp-copy sp-caption">${h(caption)}</p><p class="sp-sound">${musicIcon} ${h(data.i18n.t("originalSound", { account: accountHandle(account).slice(1) }))}</p></div></div>`;
 }
 
 function youtubePreview(data: NormalizedPreviewData): string {
   const { account, media, options } = data;
-  const title = optionString(options, "title") || firstLine(data.message, "Your video title");
+  const title = optionString(options, "title") || firstLine(data.message, data.i18n.t("videoTitle"));
   const description = optionString(options, "description") || data.message;
-  return `<div class="sp-root sp-youtube">${media[0] ? mediaAsset(media[0], true) : `<div class="sp-youtube-empty">${emptyMedia("Add a video")}</div>`}<div class="sp-youtube-info"><p class="sp-youtube-title">${h(title)}</p><p class="sp-youtube-meta">Just now</p><div class="sp-row sp-youtube-channel">${avatar(account, "sp-avatar--36")}<div class="sp-grow"><p class="sp-truncate" style="font-size:12px;font-weight:600">${h(accountName(account))}</p><p class="sp-youtube-meta">${h(accountHandle(account))}</p></div></div>${description && description !== title ? `<p class="sp-copy sp-youtube-description">${h(description)}</p>` : ""}</div></div>`;
+  return `<div class="sp-root sp-youtube">${media[0] ? mediaAsset(media[0], true, true, data.i18n) : `<div class="sp-youtube-empty">${emptyMedia(data.i18n.t("addVideo"))}</div>`}<div class="sp-youtube-info"><p class="sp-youtube-title">${h(title)}</p><p class="sp-youtube-meta">${h(data.i18n.t("justNow"))}</p><div class="sp-row sp-youtube-channel">${avatar(account, "sp-avatar--36", data.i18n)}<div class="sp-grow"><p class="sp-truncate" style="font-size:12px;font-weight:600">${h(accountName(account, data.i18n))}</p><p class="sp-youtube-meta">${h(accountHandle(account))}</p></div></div>${description && description !== title ? `<p dir="auto" class="sp-copy sp-youtube-description">${h(description)}</p>` : ""}</div></div>`;
 }
 
 function telegramPreview(data: NormalizedPreviewData): string {
   const items = [{ message: data.message, media: data.media }, ...data.thread.map((item) => ({ message: item.message, media: item.media || [] }))];
-  return `<div class="sp-root sp-telegram">${items.map((item) => `<div class="sp-bubble">${item.media.length ? platformMedia(item.media, "telegram", "sp-bubble-media") : ""}<div class="sp-bubble-copy"><p class="sp-copy">${item.message ? h(item.message) : `<span class="sp-muted">Your message will appear here.</span>`}</p><p class="sp-bubble-time">9:41</p></div></div>`).join("")}</div>`;
+  return `<div class="sp-root sp-telegram">${items.map((item) => `<div class="sp-bubble">${item.media.length ? platformMedia(item.media, "telegram", "sp-bubble-media", "carousel", data.i18n) : ""}<div class="sp-bubble-copy"><p dir="auto" class="sp-copy">${item.message ? h(item.message) : `<span class="sp-muted">${h(data.i18n.t("messagePlaceholder"))}</span>`}</p><p class="sp-bubble-time">${h(new Intl.DateTimeFormat(data.i18n.locale, { hour: "2-digit", minute: "2-digit" }).format(data.previewDate))}</p></div></div>`).join("")}</div>`;
 }
 
 function blueskyPreview(data: NormalizedPreviewData): string {
   const items = [{ message: data.message, media: data.media }, ...data.thread.map((item) => ({ message: item.message, media: item.media || [] }))];
-  return `<div class="sp-root sp-bluesky">${items.map((item) => `<div class="sp-bluesky-post"><div class="sp-row sp-bluesky-head">${avatar(data.account)}<div class="sp-grow"><p class="sp-bluesky-name sp-truncate">${h(accountName(data.account))}</p><p class="sp-bluesky-handle sp-truncate">${h(accountHandle(data.account))}</p></div></div><p class="sp-copy sp-bluesky-copy">${item.message ? h(item.message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${platformMedia(item.media, "bluesky", "sp-bluesky-media")}<p class="sp-bluesky-time">${h(formatCompactTimestamp(data.previewDate))}</p></div>`).join("")}</div>`;
+  return `<div class="sp-root sp-bluesky">${items.map((item) => `<div class="sp-bluesky-post"><div class="sp-row sp-bluesky-head">${avatar(data.account, "", data.i18n)}<div class="sp-grow"><p class="sp-bluesky-name sp-truncate">${h(accountName(data.account, data.i18n))}</p><p class="sp-bluesky-handle sp-truncate">${h(accountHandle(data.account))}</p></div></div><p dir="auto" class="sp-copy sp-bluesky-copy">${item.message ? h(item.message) : `<span class="sp-muted">${h(data.i18n.t("postPlaceholder"))}</span>`}</p>${platformMedia(item.media, "bluesky", "sp-bluesky-media", "carousel", data.i18n)}<p class="sp-bluesky-time">${h(formatCompactTimestamp(data.previewDate, data.i18n.locale))}</p></div>`).join("")}</div>`;
 }
 
 function threadsPreview(data: NormalizedPreviewData): string {
   const items = [{ message: data.message, media: data.media }, ...data.thread.map((item) => ({ message: item.message, media: item.media || [] }))];
-  return `<div class="sp-root sp-threads">${items.map((item, index) => `<div class="sp-thread-item"><div class="sp-row sp-thread-row"><div class="sp-thread-avatar">${avatar(data.account)}${index < items.length - 1 ? `<span class="sp-thread-line"></span>` : ""}</div><div class="sp-grow"><p class="sp-thread-meta"><b>${h(accountHandle(data.account).slice(1))}</b><span class="sp-thread-age">1m</span></p><p class="sp-copy sp-thread-copy">${item.message ? h(item.message) : `<span class="sp-muted">Start a thread…</span>`}</p>${platformMedia(item.media, "threads", "sp-thread-media")}</div></div></div>`).join("")}</div>`;
+  return `<div class="sp-root sp-threads">${items.map((item, index) => `<div class="sp-thread-item"><div class="sp-row sp-thread-row"><div class="sp-thread-avatar">${avatar(data.account, "", data.i18n)}${index < items.length - 1 ? `<span class="sp-thread-line"></span>` : ""}</div><div class="sp-grow"><p class="sp-thread-meta"><b>${h(accountHandle(data.account).slice(1))}</b><span class="sp-thread-age">${h(data.i18n.minuteAgo)}</span></p><p dir="auto" class="sp-copy sp-thread-copy">${item.message ? h(item.message) : `<span class="sp-muted">${h(data.i18n.t("startThread"))}</span>`}</p>${platformMedia(item.media, "threads", "sp-thread-media", "carousel", data.i18n)}</div></div></div>`).join("")}</div>`;
 }
 
 function linkedinPreview(data: NormalizedPreviewData): string {
   const { account, message, media } = data;
-  return `<div class="sp-root sp-linkedin"><div class="sp-row sp-linkedin-head">${avatar(account)}<div class="sp-grow"><p class="sp-linkedin-name sp-truncate">${h(accountName(account))} <span class="sp-muted" style="font-weight:400">• 3rd+</span></p><p class="sp-linkedin-meta">1m •</p></div><span class="sp-follow">Follow</span></div><p class="sp-copy sp-linkedin-copy">${message ? h(message) : `<span class="sp-muted">Your post will appear here.</span>`}</p>${platformMedia(media, "linkedin")}</div>`;
+  return `<div class="sp-root sp-linkedin"><div class="sp-row sp-linkedin-head">${avatar(account, "", data.i18n)}<div class="sp-grow"><p class="sp-linkedin-name sp-truncate">${h(accountName(account, data.i18n))} <span class="sp-muted" style="font-weight:400">• ${h(data.i18n.t("thirdConnection"))}</span></p><p class="sp-linkedin-meta">${h(data.i18n.minuteAgo)} •</p></div><span class="sp-follow">${h(data.i18n.t("follow"))}</span></div><p dir="auto" class="sp-copy sp-linkedin-copy">${message ? h(message) : `<span class="sp-muted">${h(data.i18n.t("postPlaceholder"))}</span>`}</p>${platformMedia(media, "linkedin", "", "carousel", data.i18n)}</div>`;
 }
 
 function pinterestPreview(data: NormalizedPreviewData): string {
-  const title = optionString(data.options, "title") || firstLine(data.message, "Your Pin");
-  const description = optionString(data.options, "description") || data.message || "Your description will appear here.";
-  return `<div class="sp-root sp-pinterest"><div class="sp-pin-media">${data.media[0] ? platformMedia(data.media, "pinterest") : `<div class="sp-pin-empty">${emptyMedia("Add media for your Pin")}</div>`}</div><div class="sp-pin-info"><p class="sp-pin-title">${h(title)}</p><p class="sp-pin-description">${h(description)}</p><div class="sp-row sp-pin-account">${avatar(data.account, "sp-avatar--32")}<p class="sp-truncate">${h(accountName(data.account))}</p></div></div></div>`;
+  const title = optionString(data.options, "title") || firstLine(data.message, data.i18n.t("pinTitle"));
+  const description = optionString(data.options, "description") || data.message || data.i18n.t("descriptionPlaceholder");
+  return `<div class="sp-root sp-pinterest"><div class="sp-pin-media">${data.media[0] ? platformMedia(data.media, "pinterest", "", "carousel", data.i18n) : `<div class="sp-pin-empty">${emptyMedia(data.i18n.t("addPinMedia"))}</div>`}</div><div class="sp-pin-info"><p class="sp-pin-title">${h(title)}</p><p class="sp-pin-description">${h(description)}</p><div class="sp-row sp-pin-account">${avatar(data.account, "sp-avatar--32", data.i18n)}<p class="sp-truncate">${h(accountName(data.account, data.i18n))}</p></div></div></div>`;
 }
 
 function foremPreview(data: NormalizedPreviewData): string {
-  const title = normalizePreviewTitle(optionString(data.options, "title") || data.message, "Your article title");
+  const title = normalizePreviewTitle(optionString(data.options, "title") || data.message, data.i18n.t("articleTitle"));
   const tags = Array.isArray(data.options.tags) ? data.options.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 4) : [];
-  return `<div class="sp-root sp-forem">${data.media[0] ? `<div class="sp-forem-cover">${mediaAsset(data.media[0])}</div>` : ""}<div class="sp-forem-info"><div class="sp-row sp-forem-head">${avatar(data.account, "sp-avatar--32")}<div><p>${h(accountName(data.account))}</p><p class="sp-forem-meta">Posted just now</p></div></div><p class="sp-forem-title">${h(title)}</p>${tags.length ? `<div class="sp-tags">${tags.map((tag) => `<span>#${h(tag)}</span>`).join("")}</div>` : ""}<p class="sp-forem-copy">${h(data.message || "Your article body will appear here.")}</p></div></div>`;
+  return `<div class="sp-root sp-forem">${data.media[0] ? `<div class="sp-forem-cover">${mediaAsset(data.media[0], false, true, data.i18n)}</div>` : ""}<div class="sp-forem-info"><div class="sp-row sp-forem-head">${avatar(data.account, "sp-avatar--32", data.i18n)}<div><p>${h(accountName(data.account, data.i18n))}</p><p class="sp-forem-meta">${h(data.i18n.t("postedJustNow"))}</p></div></div><p class="sp-forem-title">${h(title)}</p>${tags.length ? `<div class="sp-tags">${tags.map((tag) => `<span>#${h(tag)}</span>`).join("")}</div>` : ""}<p class="sp-forem-copy">${h(data.message || data.i18n.t("articlePlaceholder"))}</p></div></div>`;
 }
 
 const renderers: Record<PreviewPlatform, (data: NormalizedPreviewData) => string> = {
@@ -155,11 +158,11 @@ export function renderPostPreviewHtml(data: PostPreviewData): string {
   const normalized = normalizeData(data);
   const html = normalized.platform
     ? renderers[normalized.platform](normalized)
-    : `<div class="sp-root sp-unsupported">Unsupported platform</div>`;
+    : `<div class="sp-root sp-unsupported">${h(normalized.i18n.t("unsupported"))}</div>`;
   const layout = data.threadLayout === "expand" ? "expand" : "scroll";
   const height = typeof data.maxHeight === "number" && Number.isFinite(data.maxHeight) && data.maxHeight > 0 ? data.maxHeight : 720;
   const content = html.replace("class=\"sp-root", `class="sp-root sp-theme-${normalized.theme}`);
-  return `<div class="sp-viewport sp-viewport--${layout}"${layout === "scroll" ? ` style="max-height:var(--simple-post-preview-max-height,${height}px)" tabindex="0" role="region" aria-label="Post preview"` : ""}>${content}</div>`;
+  return `<div lang="${normalized.i18n.locale}" dir="${normalized.i18n.direction}" class="sp-viewport sp-viewport--${layout}"${layout === "scroll" ? ` style="max-height:var(--simple-post-preview-max-height,${height}px)" tabindex="0" role="region" aria-label="${h(normalized.i18n.t("postPreview"))}"` : ""}>${content}</div>`;
 }
 
 export function renderPostPreview(target: HTMLElement | ShadowRoot, data: PostPreviewData): void {

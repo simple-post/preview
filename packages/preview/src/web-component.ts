@@ -11,7 +11,7 @@ const HTMLElementBase = (globalThis.HTMLElement || class {}) as typeof HTMLEleme
 export class SimplePostPreviewElement extends HTMLElementBase {
   static readonly tagName = "simple-post-preview";
   static get observedAttributes(): string[] {
-    return ["platform", "message", "theme"];
+    return ["platform", "message", "theme", "locale"];
   }
 
   readonly #root: ShadowRoot;
@@ -37,6 +37,9 @@ export class SimplePostPreviewElement extends HTMLElementBase {
     if (name === "theme" && newValue === null) {
       this.#data = { ...this.#data, theme: "dark" };
     }
+    if (name === "locale" && newValue === null) {
+      this.#data = { ...this.#data, locale: undefined };
+    }
     this.#readAttributes();
     if (this.isConnected) this.#render();
   }
@@ -54,12 +57,14 @@ export class SimplePostPreviewElement extends HTMLElementBase {
     const platform = this.getAttribute("platform");
     const message = this.getAttribute("message");
     const theme = this.getAttribute("theme");
-    if (platform || message !== null || theme !== null) {
+    const locale = this.getAttribute("locale");
+    if (platform || message !== null || theme !== null || locale !== null) {
       this.#data = {
         ...this.#data,
         ...(platform ? { platform, account: { ...this.#data.account, platform } } : {}),
         ...(message !== null ? { message } : {}),
         ...(theme !== null ? { theme: theme === "light" ? "light" : "dark" } : {}),
+        ...(locale !== null ? { locale } : {}),
       };
     }
   }

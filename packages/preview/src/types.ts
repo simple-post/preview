@@ -43,6 +43,8 @@ export interface PreviewThreadItem {
 }
 
 export interface PostPreviewData {
+  /** BCP 47 language for preview controls and placeholders; never translates post content. */
+  locale?: string;
   platform?: PreviewPlatformInput | (string & {});
   theme?: PreviewTheme;
   /** X is rolling out swipeable media; select grid for its classic feed layout. */
