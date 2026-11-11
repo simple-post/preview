@@ -127,7 +127,7 @@ describe("interactive previews", () => {
     next.click();
     expect(track.scrollLeft).toBe(300);
     expect(track.scrollTo).toHaveBeenCalledTimes(1);
-    expect(container.querySelector(".sp-gallery-status")?.textContent).toBe("2 / 3");
+    expect(container.querySelector(".sp-gallery-status")?.textContent).toBe("2 of 3");
     track.dispatchEvent(new KeyboardEvent("keydown", { key: "End" }));
     expect(track.scrollLeft).toBe(600);
     expect(next.disabled).toBe(true);

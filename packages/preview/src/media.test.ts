@@ -92,7 +92,7 @@ describe("platform-specific media", () => {
     expect(node.querySelectorAll(".sp-gallery-dot")[1].classList.contains("sp-active")).toBe(true);
     track.scrollLeft = 780;
     track.dispatchEvent(new Event("scroll"));
-    expect(node.querySelector(".sp-gallery-status")?.textContent).toBe("4 / 4");
+    expect(node.querySelector(".sp-gallery-status")?.textContent).toBe("4 of 4");
     track.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
     expect(track.scrollLeft).toBe(0);
   });
