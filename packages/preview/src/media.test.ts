@@ -72,6 +72,47 @@ describe("platform-specific media", () => {
     expect(document.activeElement).toBe(tile);
     node.remove();
   });
+  it.each(["x", "tiktok"])("keeps %s video controls independent of carousel navigation", platform => {
+    const node = document.createElement("div");
+    const videoFile = { type: "video", url: "https://example.com/video.mp4" } as const;
+    renderPostPreview(node, { ...data(platform), media: [videoFile, videoFile] });
+    const track = node.querySelector<HTMLElement>(".sp-gallery-track")!;
+    layout(track, 300, 300);
+    const video = track.querySelector("video")!;
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => {});
+    Object.defineProperty(video, "paused", { value: false });
+    const key = new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true });
+    video.dispatchEvent(key);
+    expect(key.defaultPrevented).toBe(false);
+    expect(track.scrollLeft).toBe(0);
+    track.setPointerCapture = vi.fn();
+    const pointer = new MouseEvent("pointerdown", { button: 0, bubbles: true });
+    Object.defineProperty(pointer, "pointerType", { value: "mouse" });
+    video.dispatchEvent(pointer);
+    expect(track.setPointerCapture).not.toHaveBeenCalled();
+    node.querySelector<HTMLButtonElement>(".sp-gallery-next")!.click();
+    expect(track.scrollLeft).toBe(300);
+    expect(pause).toHaveBeenCalledOnce();
+  });
+  it("opens video tiles in the album viewer and pauses playback when it closes", () => {
+    const node = document.createElement("div");
+    const album = data("telegram", 2);
+    album.media![1] = { type: "video", url: "https://example.com/video.mp4" };
+    renderPostPreview(node, album);
+    const track = node.querySelector<HTMLElement>(".sp-gallery-track")!;
+    layout(track, 300, 300);
+    const tile = node.querySelector<HTMLButtonElement>('[data-open-index="1"]')!;
+    expect(tile.querySelector("video")?.controls).toBe(false);
+    tile.click();
+    expect(track.scrollLeft).toBe(300);
+    const video = track.querySelector("video")!;
+    expect(video.controls).toBe(true);
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => {});
+    Object.defineProperty(video, "paused", { value: false });
+    node.querySelector<HTMLButtonElement>(".sp-album-back")!.click();
+    expect(pause).toHaveBeenCalledOnce();
+    expect(node.querySelector<HTMLElement>(".sp-album-viewer")!.hidden).toBe(true);
+  });
   it("uses source orientation for LinkedIn and updates when the image loads", () => {
     const node = document.createElement("div");
     renderPostPreview(node, { ...data("linkedin", 3), media: data("linkedin", 3).media!.map(file => ({ ...file, width: 1600, height: 900 })) });
