@@ -178,7 +178,9 @@ export function initializePostPreview(target: HTMLElement | ShadowRoot): void {
     video.dataset.initialized = "true";
     // Seeking decodes a full-resolution frame without canvas, autoplay, or CORS requirements.
     const seek = () => {
-      if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = Math.min(0.1, video.duration / 2);
+      if (video.paused && video.currentTime === 0 && Number.isFinite(video.duration) && video.duration > 0) {
+        video.currentTime = Math.min(0.1, video.duration / 2);
+      }
     };
     video.addEventListener("loadedmetadata", seek, { once: true });
     video.addEventListener("seeked", () => video.removeAttribute("poster"), { once: true });

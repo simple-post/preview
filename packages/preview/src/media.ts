@@ -7,14 +7,15 @@ export function emptyMedia(label: string): string {
   return `<div class="sp-empty">${imageIcon}<span>${h(label)}</span></div>`;
 }
 
-export function mediaAsset(file: PreviewMedia, natural = false, showPlay = true, i18n: PreviewI18n = previewI18n()): string {
+export function mediaAsset(file: PreviewMedia, natural = false, playable = true, i18n: PreviewI18n = previewI18n()): string {
   const source = safeUrl(file.url);
   const thumbnail = safeUrl(file.thumbnailUrl);
   const label = file.alt || file.filename || i18n.t("postMedia");
   if (!source && !thumbnail) return emptyMedia(i18n.t("mediaUnavailable"));
   const className = `sp-media${natural ? " sp-media--natural" : ""}`;
   if (file.type === "image") return `<div class="${className}"><img src="${h(source || thumbnail)}" alt="${h(label)}" draggable="false" /></div>`;
-  return `<div class="${className}"><video${source ? ` src="${h(source)}"` : ""}${thumbnail ? ` poster="${h(thumbnail)}"` : ""} aria-label="${h(label)}" muted playsinline preload="metadata"></video>${showPlay ? `<span class="sp-play"><span>${playIcon}</span></span>` : ""}</div>`;
+  const controls = playable && source ? " controls" : "";
+  return `<div class="${className}"><video${source ? ` src="${h(source)}"` : ""}${thumbnail ? ` poster="${h(thumbnail)}"` : ""} aria-label="${h(label)}"${controls} playsinline preload="metadata"></video>${!playable && source ? `<span class="sp-play" aria-hidden="true"><span>${playIcon}</span></span>` : ""}</div>`;
 }
 
 function ratio(file: PreviewMedia): number {
@@ -25,11 +26,12 @@ type GalleryStyle = "instagram" | "tiktok" | "x" | "threads" | "pinterest" | "vi
 const chevron = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 function carousel(media: PreviewMedia[], style: GalleryStyle, className = "", i18n: PreviewI18n = previewI18n()): string {
-  const arrows = style !== "x" && style !== "tiktok";
+  const hasVideo = media.some(file => file.type === "video" && safeUrl(file.url));
+  const arrows = hasVideo || (style !== "x" && style !== "tiktok");
   const dots = style !== "threads" && style !== "viewer";
   const counter = style === "instagram" || style === "tiktok" || style === "viewer";
   const aspect = Math.max(style === "pinterest" ? 2 / 3 : 4 / 5, Math.min(1.91, ratio(media[0])));
-  return `<section data-locale="${i18n.locale}" dir="ltr" class="sp-gallery sp-gallery--${style} ${className}" style="--sp-media-ratio:${aspect}" aria-label="${h(i18n.t("postMedia"))}" aria-roledescription="${h(i18n.t("carousel"))}"><div class="sp-gallery-stage"><div class="sp-gallery-track" tabindex="0" aria-label="${h(i18n.t("scrollMedia", { count: media.length }))}">${media.map((file, index) => `<div class="sp-gallery-slide" role="group" aria-roledescription="${h(i18n.t("slide"))}" aria-label="${h(i18n.t("mediaPosition", { index: index + 1, count: media.length }))}">${mediaAsset(file, false, style !== "tiktok", i18n)}</div>`).join("")}</div>${counter ? `<span class="sp-counter" aria-hidden="true">${i18n.number(1)}/${i18n.number(media.length)}</span>` : ""}${arrows ? `<div class="sp-gallery-controls" hidden><button class="sp-gallery-prev" type="button" data-direction="-1" aria-label="${h(i18n.t("previousMedia"))}">${chevron}</button><button class="sp-gallery-next" type="button" data-direction="1" aria-label="${h(i18n.t("nextMedia"))}">${chevron}</button></div>` : ""}</div>${dots ? `<div class="sp-gallery-dots" aria-hidden="true">${media.map((_, i) => `<span class="sp-gallery-dot${i === 0 ? " sp-active" : ""}"></span>`).join("")}</div>` : ""}<span class="sp-sr-only sp-gallery-status" aria-live="polite">${h(i18n.t("mediaPosition", { index: 1, count: media.length }))}</span></section>`;
+  return `<section data-locale="${i18n.locale}" dir="ltr" class="sp-gallery sp-gallery--${style}${hasVideo ? " sp-gallery--video" : ""} ${className}" style="--sp-media-ratio:${aspect}" aria-label="${h(i18n.t("postMedia"))}" aria-roledescription="${h(i18n.t("carousel"))}"><div class="sp-gallery-stage"><div class="sp-gallery-track" tabindex="0" aria-label="${h(i18n.t("scrollMedia", { count: media.length }))}">${media.map((file, index) => `<div class="sp-gallery-slide" role="group" aria-roledescription="${h(i18n.t("slide"))}" aria-label="${h(i18n.t("mediaPosition", { index: index + 1, count: media.length }))}">${mediaAsset(file, false, true, i18n)}</div>`).join("")}</div>${counter ? `<span class="sp-counter" aria-hidden="true">${i18n.number(1)}/${i18n.number(media.length)}</span>` : ""}${arrows ? `<div class="sp-gallery-controls" hidden><button class="sp-gallery-prev" type="button" data-direction="-1" aria-label="${h(i18n.t("previousMedia"))}">${chevron}</button><button class="sp-gallery-next" type="button" data-direction="1" aria-label="${h(i18n.t("nextMedia"))}">${chevron}</button></div>` : ""}</div>${dots ? `<div class="sp-gallery-dots" aria-hidden="true">${media.map((_, i) => `<span class="sp-gallery-dot${i === 0 ? " sp-active" : ""}"></span>`).join("")}</div>` : ""}<span class="sp-sr-only sp-gallery-status" aria-live="polite">${h(i18n.t("mediaPosition", { index: 1, count: media.length }))}</span></section>`;
 }
 
 function mosaic(media: PreviewMedia[], platform: PreviewPlatform, className: string, i18n: PreviewI18n): string {
@@ -37,7 +39,7 @@ function mosaic(media: PreviewMedia[], platform: PreviewPlatform, className: str
   const shown = media.slice(0, limit);
   const count = shown.length;
   const landscape = ratio(media[0]) > 4 / 3;
-  const tiles = shown.map((file, i) => `<button type="button" class="sp-mosaic-tile" data-open-index="${i}" aria-label="${h(i18n.t(i === count - 1 && media.length > count ? "viewMediaMore" : "viewMedia", { index: i + 1, count: media.length, more: media.length - count }))}">${mediaAsset(file, false, true, i18n)}${i === count - 1 && media.length > count ? `<span class="sp-more">+${i18n.number(media.length - count)}</span>` : ""}</button>`);
+  const tiles = shown.map((file, i) => `<button type="button" class="sp-mosaic-tile" data-open-index="${i}" aria-label="${h(i18n.t(i === count - 1 && media.length > count ? "viewMediaMore" : "viewMedia", { index: i + 1, count: media.length, more: media.length - count }))}">${mediaAsset(file, false, false, i18n)}${i === count - 1 && media.length > count ? `<span class="sp-more">+${i18n.number(media.length - count)}</span>` : ""}</button>`);
   let grid: string;
   if (platform === "telegram" && count > 4) {
     // Justified rows preserve the album's order and show every item in the chat bubble.
@@ -59,7 +61,7 @@ function mosaic(media: PreviewMedia[], platform: PreviewPlatform, className: str
 
 export function platformMedia(media: PreviewMedia[], platform: PreviewPlatform, className = "", xLayout: "carousel" | "grid" = "carousel", i18n: PreviewI18n = previewI18n()): string {
   if (!media.length) return "";
-  if (media.length === 1) return `<div class="${className}" style="overflow:hidden">${mediaAsset(media[0], platform !== "tiktok", platform !== "tiktok", i18n)}</div>`;
+  if (media.length === 1) return `<div class="${className}" style="overflow:hidden">${mediaAsset(media[0], platform !== "tiktok", true, i18n)}</div>`;
   if (["telegram", "bluesky", "facebook", "linkedin"].includes(platform) || platform === "x" && xLayout === "grid") return mosaic(media, platform, className, i18n);
   return carousel(media, platform as GalleryStyle, className, i18n);
 }
@@ -77,6 +79,8 @@ export function initializeMedia(target: HTMLElement | ShadowRoot): void {
     const status = gallery.querySelector<HTMLElement>(".sp-gallery-status")!;
     const counter = gallery.querySelector<HTMLElement>(".sp-counter");
     const last = slides.length - 1;
+    const videos = slides.map(slide => slide.querySelector<HTMLVideoElement>("video[controls]"));
+    let activeSlide = 0;
     // Offsets, rather than container widths, handle peeking cards, gaps, and resizing.
     const position = (i: number) => Math.min(slides[i].offsetLeft - slides[0].offsetLeft, Math.max(0, track.scrollWidth - track.clientWidth));
     const index = () => {
@@ -86,6 +90,11 @@ export function initializeMedia(target: HTMLElement | ShadowRoot): void {
     };
     const update = () => {
       const current = index();
+      if (current !== activeSlide) {
+        const video = videos[activeSlide];
+        if (video && !video.paused) video.pause();
+        activeSlide = current;
+      }
       buttons.forEach(button => { button.disabled = Number(button.dataset.direction) < 0 ? current === 0 : current === last; });
       dots.forEach((dot, i) => {
         dot.classList.toggle("sp-active", i === current);
@@ -102,14 +111,14 @@ export function initializeMedia(target: HTMLElement | ShadowRoot): void {
     buttons.forEach(button => button.addEventListener("click", () => navigate(index() + Number(button.dataset.direction))));
     track.addEventListener("scroll", update, { passive: true });
     track.addEventListener("keydown", event => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      if (event.target !== track || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
       navigate(event.key === "Home" ? 0 : event.key === "End" ? last : index() + (event.key === "ArrowRight" ? 1 : -1));
     });
     // Mouse drag supplements native touch/trackpad scrolling on arrow-free feeds.
     let drag: { x: number; left: number } | undefined;
     track.addEventListener("pointerdown", event => {
-      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      if (event.pointerType !== "mouse" || event.button !== 0 || (event.target as Element).closest("video[controls]")) return;
       drag = { x: event.clientX, left: track.scrollLeft };
       track.setPointerCapture(event.pointerId);
       track.classList.add("sp-dragging");
@@ -145,7 +154,14 @@ export function initializeMedia(target: HTMLElement | ShadowRoot): void {
       navigators.get(gallery)?.(Number(button.dataset.openIndex));
       back.focus({ preventScroll: true });
     }));
-    const close = () => { viewer.hidden = true; grid.hidden = false; opener?.focus({ preventScroll: true }); };
+    const close = () => {
+      viewer.querySelectorAll<HTMLVideoElement>("video[controls]").forEach(video => {
+        if (!video.paused) video.pause();
+      });
+      viewer.hidden = true;
+      grid.hidden = false;
+      opener?.focus({ preventScroll: true });
+    };
     back.addEventListener("click", close);
     viewer.addEventListener("keydown", event => { if (event.key === "Escape") { event.preventDefault(); close(); } });
     const firstImage = grid.querySelector("img");

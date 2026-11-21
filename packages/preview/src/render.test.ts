@@ -148,6 +148,9 @@ describe("interactive previews", () => {
     expect(video.hasAttribute("poster")).toBe(true);
     video.dispatchEvent(new Event("seeked"));
     expect(video.hasAttribute("poster")).toBe(false);
+    expect(video.controls).toBe(true);
+    expect(video.playsInline).toBe(true);
+    expect(video.muted).toBe(false);
     expect(video.autoplay).toBe(false);
   });
 });
@@ -158,6 +161,7 @@ describe("media fallback and mixed galleries", () => {
     renderPostPreview(container, { ...base, media: [{ type: "video", url: "javascript:alert(1)", thumbnailUrl: "https://example.com/poster.jpg" }] });
     const video = container.querySelector("video")!;
     expect(video.hasAttribute("src")).toBe(false);
+    expect(video.controls).toBe(false);
     expect(video.getAttribute("poster")).toContain("poster.jpg");
   });
 
